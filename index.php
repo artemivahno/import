@@ -17,8 +17,8 @@
 <body>
 <form>
     <div class="form-group">
-        <label for="exampleFormControlFile1">Импорт Прайса</label>
-        <input type="file" class="form-control-file" id="exampleFormControlFile1">
+        <label for="FormControlFile">Импорт Прайса</label>
+        <input type="file" class="form-control-file" id="FormControlFile">
     </div>
 </form>
 </body>
