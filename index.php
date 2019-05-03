@@ -15,9 +15,9 @@
             crossorigin="anonymous"></script>
 </head>
 <body>
-<form>
+<form method ='post' enctype="multipart/form-data" action="loadExcel.php">
     <div class="form-group">
-        <label for="FormControlFile">Импорт Прайса</label>
+        <label for="FormControlFile">Импорт Прайса</label><br>
         <input type="file" class="form-control-file" id="FormControlFile">
     </div>
 </form>
