@@ -8,7 +8,6 @@
     <title>Document</title>
 
 
-
     <!-- Bootstrap -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
           integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
@@ -17,10 +16,14 @@
             crossorigin="anonymous"></script>
 </head>
 <body>
-<form method ='post' enctype="multipart/form-data" action="loadExcel.php">
+<form method='post' enctype="multipart/form-data" action="loadExcel.php">
     <div class="form-group">
-        <label for="FormControlFile">Импорт Прайса</label><br>
+        <label for="FormControlFile">Импорт Прайса</label>
+        <br>
         <input type="file" class="form-control-file" id="FormControlFile">
+        <br>
+        <button type="submit" class="btn btn-primary pull-right" disabled>Загрузить</button>
+        <button type="reset" class="btn btn-danger">Отмена</button>
     </div>
 </form>
 </body>
