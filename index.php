@@ -17,11 +17,6 @@
 </head>
 <body>
 
-<!--<form action=loadExcel.php method=post enctype=multipart/form-data>
-<input type=file name=uploadfile>
-<input type=submit value=Загрузить></form>-->
-
-
 <form method='post' enctype="multipart/form-data" action="loadExcel.php">
     <div class="form-group">
         <label for="FormControlFile">Импорт Прайса</label>

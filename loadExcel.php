@@ -1,6 +1,5 @@
 <?php
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
 require_once 'vendor/autoload.php';
 
 //Для загрузки файла на сервер, на данный момент не используем
@@ -23,30 +22,39 @@ echo "<p><b>Размер загруженного файла в байтах: " 
 echo "<p><b>Временное имя файла: " . $_FILES['uploadfile']['tmp_name'] . "</b></p>";*/
 
 $inputFileName = $_FILES['uploadfile']["tmp_name"];
-echo 'NAME: ' . $inputFileName;
+echo 'TMP-FILE-NAME: ' . $inputFileName;
 
 $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
 
 $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
-
-var_dump($loadedSheetNames);
+echo '<br/>';
 
 foreach($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности
-	echo '<br/>' . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
+	echo '<br/>' ."Номер и имя листа: ". ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 }
 
 $sheet = $spreadsheet->getActiveSheet();
-$rows = $sheet->toArray();
-foreach ($rows AS $r) {
-    echo '-----------------------------------------------<br/>';
-    foreach ($r AS $c) {
-	    if($c == "") {
 
-	    }
-	    else {
-		    echo '<br>[' . $c . ']';
-	    }
 
-    }
-    echo '<br/>';
+foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим весь ezcel
+
+	echo '<br/>' . '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~' . '<br>' ."Содержимое листа в виде таблицы: ". ($sheetIndex . ' -> ' . $loadedSheetName);//название листа
+	echo "<table border=\"1\">";
+
+	$rows = $sheet->toArray();
+	foreach ($rows AS $row) {
+
+		//echo '-----------------------------------------------<br/>';
+		echo "<tr>";
+		foreach ($row AS $cell) {
+			/*if ($cell == "") {
+
+			} else {*/
+			echo "<td>" . $cell . "</td>";
+		}
+
+	}
+	echo '<br/>';
+
 }
+echo "</table>";
