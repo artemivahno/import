@@ -16,13 +16,19 @@
             crossorigin="anonymous"></script>
 </head>
 <body>
+
+<!--<form action=loadExcel.php method=post enctype=multipart/form-data>
+<input type=file name=uploadfile>
+<input type=submit value=Загрузить></form>-->
+
+
 <form method='post' enctype="multipart/form-data" action="loadExcel.php">
     <div class="form-group">
         <label for="FormControlFile">Импорт Прайса</label>
         <br>
-        <input type="file" class="form-control-file" id="FormControlFile">
+	    <input name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
         <br>
-        <button type="submit" class="btn btn-primary pull-right" disabled>Загрузить</button>
+        <button type="submit" class="btn btn-primary pull-right" <!--disabled-->>Загрузить</button>
         <button type="reset" class="btn btn-danger">Отмена</button>
     </div>
 </form>
