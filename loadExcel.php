@@ -33,12 +33,10 @@ foreach($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводи�
 	echo '<br/>' ."Номер и имя листа: ". ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 }
 
-$sheet = $spreadsheet->getActiveSheet();
-
-
 foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим весь ezcel
 
-	echo '<br/>' . '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~' . '<br>' ."Содержимое листа в виде таблицы: ". ($sheetIndex . ' -> ' . $loadedSheetName);//название листа
+	$sheet = $spreadsheet->getSheet($sheetIndex);
+
 	echo "<table border=\"1\">";
 
 	$rows = $sheet->toArray();
@@ -55,6 +53,5 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводи
 
 	}
 	echo '<br/>';
-
 }
 echo "</table>";
