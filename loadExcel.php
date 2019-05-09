@@ -1,6 +1,7 @@
 <?php
 use PhpOffice\PhpSpreadsheet\IOFactory;
 require_once 'vendor/autoload.php';
+//include_once 'imgFromExcel.php';
 
 //Для загрузки файла на сервер, на данный момент не используем
 /*@mkdir("files", 0777);
@@ -27,27 +28,59 @@ echo 'TMP-FILE-NAME: ' . $inputFileName;
 $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
 
 $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
-echo '<br/>';
-
+echo '<br>';
 foreach($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности
 	echo '<br/>' ."Номер и имя листа: ". ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 }
 
-foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим весь ezcel
+/*$reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileName);
+$reader->setReadDataOnly(TRUE);
+$spreadsheet = $reader->load($inputFileName);*/
+
+
+//через Итератор активный лист
+/*$worksheet = $spreadsheet->getActiveSheet();
+
+echo '<table border="1">' . PHP_EOL;
+foreach ($worksheet->getRowIterator() as $row) {
+    echo '<tr>' . PHP_EOL;
+    $cellIterator = $row->getCellIterator();
+    $cellIterator->setIterateOnlyExistingCells(FALSE); // This loops through all cells,
+                                                       //    even if a cell value is not set.
+                                                       // By default, only cells that have a value
+                                                       //    set will be iterated.
+    foreach ($cellIterator as $cell) {
+        echo '<td>' .
+             $cell->getValue() .
+             '</td>' . PHP_EOL;
+    }
+    echo '</tr>' . PHP_EOL;
+}
+echo '</table>' . PHP_EOL;
+
+exit();*/
+
+// выводим весь ezcel
+foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
 	$sheet = $spreadsheet->getSheet($sheetIndex);
 
 	echo "<table border=\"1\">";
 
 	$rows = $sheet->toArray();
-	foreach ($rows AS $row) {
+	//var_dump($rows);
 
-		//echo '-----------------------------------------------<br/>';
+	$mergeCell = $sheet->getMergeCells();
+	var_dump($mergeCell);
+	foreach ($rows AS $row) {
+		/*if (getMergeCells()){
+		echo " НАШЕЛ ";
+	}*/
+
+		//print_r($rows);
+
 		echo "<tr>";
 		foreach ($row AS $cell) {
-			/*if ($cell == "") {
-
-			} else {*/
 			echo "<td>" . $cell . "</td>";
 		}
 
@@ -55,3 +88,4 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводи
 	echo '<br/>';
 }
 echo "</table>";
+
