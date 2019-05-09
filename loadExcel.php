@@ -70,8 +70,29 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 	$rows = $sheet->toArray();
 	//var_dump($rows);
 
-	$mergeCell = $sheet->getMergeCells();
+//--Mergin cells
+	$mergeCell = $sheet->getMergeCells(); //taking margin cells on the sheet
 	var_dump($mergeCell);
+	echo "<br>";
+
+	$horizontalMargin = preg_grep('"A\d"', $mergeCell);//taking horizontal margin cells A-start on the sheet
+	var_dump($horizontalMargin);
+
+
+	echo "<br>";
+	echo $horizontalMarginArray;
+
+	echo "<br>";
+	$tmp = array_keys($horizontalMargin);//-takes cell coordinate
+
+	var_dump($tmp);
+	echo "<br>";
+	foreach ($tmp AS $value)
+		$key = preg_replace('(:.*)', '', $tmp);
+	var_dump($key); //
+
+
+//--end Mergin cells
 	foreach ($rows AS $row) {
 		/*if (getMergeCells()){
 		echo " НАШЕЛ ";
