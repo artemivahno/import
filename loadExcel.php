@@ -33,33 +33,6 @@ foreach($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводи�
 	echo '<br/>' ."Номер и имя листа: ". ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 }
 
-/*$reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputFileName);
-$reader->setReadDataOnly(TRUE);
-$spreadsheet = $reader->load($inputFileName);*/
-
-
-//через Итератор активный лист
-/*$worksheet = $spreadsheet->getActiveSheet();
-
-echo '<table border="1">' . PHP_EOL;
-foreach ($worksheet->getRowIterator() as $row) {
-    echo '<tr>' . PHP_EOL;
-    $cellIterator = $row->getCellIterator();
-    $cellIterator->setIterateOnlyExistingCells(FALSE); // This loops through all cells,
-                                                       //    even if a cell value is not set.
-                                                       // By default, only cells that have a value
-                                                       //    set will be iterated.
-    foreach ($cellIterator as $cell) {
-        echo '<td>' .
-             $cell->getValue() .
-             '</td>' . PHP_EOL;
-    }
-    echo '</tr>' . PHP_EOL;
-}
-echo '</table>' . PHP_EOL;
-
-exit();*/
-
 // выводим весь ezcel
 foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
@@ -84,12 +57,15 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 	echo "<br>";
 	$margeCellCoordinate = array_keys($horizontalMargin);//-takes cell coordinate
 
-	var_dump($margeCellCoordinate);
+	/*var_dump($margeCellCoordinate);*/
+	echo print_r($margeCellCoordinate);
+
 	echo "<br>";
 	//$margeCellCoordinate  - A1 / A5
 	foreach ($margeCellCoordinate AS $value)
 		$cellCoordinate = preg_replace('(:.*)', '', $margeCellCoordinate);
 	var_dump($cellCoordinate);
+	echo "<br>"."------------------------------------------------";
 	echo "<br>";
 
 	//$cellCoordinateByRow  - dell A = 1 / 5 ...
@@ -103,15 +79,20 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 	echo "<br>";
 
 //Getting CATEGORY
+
+
 	foreach ($cellCoordinateByRow as $value) {
 		$check = $value;
-		echo "<br> cellCoordinateByRow ".$value;
-		//print_r($check);
-		$tmp = $sheet->getCellByColumnAndRow(4, $check);
-		echo "<br> CellByColumnAndRow ".$tmp;
+		print_r($check);
+
 		foreach ($cellCoordinate as $value)
-			if ($sheet->getCell($value) != "" || $sheet->getCellByColumnAndRow(4, $check) == "")
+			if ($sheet->getCell($value) != "" || $sheet->getCellByColumnAndRow(4, $check) == ""){
 				$category = $sheet->getCell($value)->getValue();
+
+				echo "<br>".$category."<>".$key."+".$value;
+				//break;
+			}
+
 	}
 	echo "<br>";
 
@@ -121,11 +102,6 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
 //--end Mergin cells
 	foreach ($rows AS $row) {
-		/*if (getMergeCells()){
-		echo " НАШЕЛ ";
-	}*/
-
-		//print_r($rows);
 
 		echo "<tr>";
 		foreach ($row AS $cell) {
