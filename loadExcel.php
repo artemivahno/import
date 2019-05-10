@@ -68,7 +68,6 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 	echo "<table border=\"1\">";
 
 	$rows = $sheet->toArray();
-	//var_dump($rows);
 
 //--Mergin cells
 	$mergeCell = $sheet->getMergeCells(); //taking margin cells on the sheet
@@ -83,13 +82,41 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 	echo $horizontalMarginArray;
 
 	echo "<br>";
-	$tmp = array_keys($horizontalMargin);//-takes cell coordinate
+	$margeCellCoordinate = array_keys($horizontalMargin);//-takes cell coordinate
 
-	var_dump($tmp);
+	var_dump($margeCellCoordinate);
 	echo "<br>";
-	foreach ($tmp AS $value)
-		$key = preg_replace('(:.*)', '', $tmp);
-	var_dump($key); //
+	//$margeCellCoordinate  - A1 / A5
+	foreach ($margeCellCoordinate AS $value)
+		$cellCoordinate = preg_replace('(:.*)', '', $margeCellCoordinate);
+	var_dump($cellCoordinate);
+	echo "<br>";
+
+	//$cellCoordinateByRow  - dell A = 1 / 5 ...
+	var_dump($cellCoordinateByRow);
+	echo "<br>";
+
+	foreach ($cellCoordinate as $value)
+		$cellCoordinateByRow = preg_replace('(A)', '', $cellCoordinate);
+
+	var_dump($cellCoordinateByRow);
+	echo "<br>";
+
+//Getting CATEGORY
+	foreach ($cellCoordinateByRow as $value) {
+		$check = $value;
+		echo "<br> cellCoordinateByRow ".$value;
+		//print_r($check);
+		$tmp = $sheet->getCellByColumnAndRow(4, $check);
+		echo "<br> CellByColumnAndRow ".$tmp;
+		foreach ($cellCoordinate as $value)
+			if ($sheet->getCell($value) != "" || $sheet->getCellByColumnAndRow(4, $check) == "")
+				$category = $sheet->getCell($value)->getValue();
+	}
+	echo "<br>";
+
+	echo "CATEGORY IS " . $category;
+
 
 
 //--end Mergin cells
