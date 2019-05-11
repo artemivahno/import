@@ -44,7 +44,7 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
 //--Mergin cells
 	$mergeCell = $sheet->getMergeCells(); //taking margin cells on the sheet
-	var_dump($mergeCell);
+	/*var_dump($mergeCell);*/
 	echo "<br>";
 
 	$horizontalMargin = preg_grep('"A\d"', $mergeCell);//taking horizontal margin cells A-start on the sheet
@@ -52,13 +52,11 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
 
 	echo "<br>";
-	echo $horizontalMarginArray;
+	/*echo $horizontalMarginArray;*/
 
 	echo "<br>";
-	$margeCellCoordinate = array_keys($horizontalMargin);//-takes cell coordinate
+	$margeCellCoordinate = array_keys($horizontalMargin);//-takes keys = cell coordinate
 
-	/*var_dump($margeCellCoordinate);*/
-	echo print_r($margeCellCoordinate);
 
 	echo "<br>";
 	//$margeCellCoordinate  - A1 / A5
@@ -83,13 +81,13 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
 	foreach ($cellCoordinateByRow as $value) {
 		$check = $value;
-		print_r($check);
+		/*print_r($check);*/
 
 		foreach ($cellCoordinate as $value)
 			if ($sheet->getCell($value) != "" || $sheet->getCellByColumnAndRow(4, $check) == ""){
 				$category = $sheet->getCell($value)->getValue();
 
-				echo "<br>".$category."<>".$key."+".$value;
+				echo "<br>".$category."<>"."=".$value;
 				//break;
 			}
 
