@@ -31,13 +31,11 @@ $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
 $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
 echo '<br>';
 
-foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности
+foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности Имена листов
 	echo '<br/>' . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 }
 // выводим весь ezcel
 foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
-
-
 
 	//======================================IMAGES
 	/*
@@ -127,6 +125,18 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 //Выводим кол-во строк и колонок
 	echo "<br>" . "---" . "<br>" . "highestRow" . "=" . $highestRow  ;
 	echo "<br>" . "---" . "<br>" . "highestColumn" . "=" . $lastColumnIndex . "<br>" . "---" . "<br>";
+
+//Заполнияем MergeCells
+
+	//$mergedCellsRange = $this->activeSheet->getMergeCells();
+
+	foreach($mergeCell as $currMergedRange) {
+	if($cell->isInRange($currMergedRange)) {
+		$currMergedCellsArray = PHPExcel_Cell::splitRange($currMergedRange);
+			$cell = $this->activeSheet->getCell($currMergedCellsArray[0][0]);
+			break;
+		}
+	}
 
 //Getting CATEGORY
 
