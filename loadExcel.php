@@ -37,137 +37,105 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводи
 // выводим весь ezcel
 foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
-//--------------
-	$worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
-
-	$highestRow = $worksheet->getHighestRow(); //количество строк
-	echo "<br>" . "---" . "<br>";
-
-	echo "highestRow" . "=" . $highestRow;
-	echo "<br>" . "---" . "<br>";
-
-	$highestColumn = $worksheet->getHighestDataColumn(); // количество столбцов буквами
-	echo "<br>" . "---" . "<br>";
-	var_dump($highestColumn);
-	echo "highestColumn" . "=" . $highestColumn; //
-	echo "<br>" . "---" . "<br>";
-
-	$highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn); //количество столбцов цифрами
-	echo "<br>" . "---" . "<br>";
-	echo "highestColumnIndex " . "=" . $highestColumnIndex;
-
-	echo "<br>" . "---" . "<br>";
 
 
 	//======================================IMAGES
+	/*
+		$i = 0;
+		@mkdir("files", 0777);
+		@mkdir("files/$loadedSheetName", 0777);
+		$uploaddir = "./files/$loadedSheetName";
 
-	$i = 0;
-	@mkdir("files", 0777);
-	@mkdir("files/$loadedSheetName", 0777);
-	$uploaddir = "./files/$loadedSheetName";
-
-	foreach ($worksheet->getDrawingCollection() as $drawing) {
-		if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
-			ob_start();
-			call_user_func(
-				$drawing->getRenderingFunction(),
-				$drawing->getImageResource()
-			);
-			$imageContents = ob_get_contents();
-			ob_end_clean();
-			switch ($drawing->getMimeType()) {
-				case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_PNG :
-					$extension = 'png';
-					break;
-				case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_GIF:
-					$extension = 'gif';
-					break;
-				case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_JPEG :
-					$extension = 'jpg';
-					break;
+		foreach ($worksheet->getDrawingCollection() as $drawing) {
+			if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
+				ob_start();
+				call_user_func(
+					$drawing->getRenderingFunction(),
+					$drawing->getImageResource()
+				);
+				$imageContents = ob_get_contents();
+				ob_end_clean();
+				switch ($drawing->getMimeType()) {
+					case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_PNG :
+						$extension = 'png';
+						break;
+					case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_GIF:
+						$extension = 'gif';
+						break;
+					case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_JPEG :
+						$extension = 'jpg';
+						break;
+				}
+			} else {
+				$zipReader = fopen($drawing->getPath(), 'r');
+				$imageContents = '';
+				while (!feof($zipReader)) {
+					$imageContents .= fread($zipReader, 1024);
+				}
+				fclose($zipReader);
+				$extension = $drawing->getExtension();
 			}
-		} else {
-			$zipReader = fopen($drawing->getPath(), 'r');
-			$imageContents = '';
-			while (!feof($zipReader)) {
-				$imageContents .= fread($zipReader, 1024);
-			}
-			fclose($zipReader);
-			$extension = $drawing->getExtension();
+			$myFileName = $uploaddir . '/'.$loadedSheetName.'_'.$sheetIndex.'_Image_' . ++$i . '.' . $extension; //Имя файла картинки
+			file_put_contents($myFileName, $imageContents);
 		}
-		$myFileName = $uploaddir . '/'.$loadedSheetName.'_'.$sheetIndex.'_Image_' . ++$i . '.' . $extension; //Имя файла картинки
-		file_put_contents($myFileName, $imageContents);
-	}
 
-	echo "ALL IMAGES ARE SAVED";
+		echo "ALL IMAGES ARE SAVED";*/
 
 
 //======================================
 //-----------------
-	echo '<br/>' . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
+	echo "========================++++++++++++++++++++++++========================================" . '<br/>'
+		. "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
+
 
 	$worksheet = $spreadsheet->getSheet($sheetIndex);
-
-	echo "<table border=\"1\">";
+	$worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
 
 	$rows = $worksheet->toArray();
 
+
+
+//--------------
+	//количество столбцов считает вместе с пустыми - не подходит
+	/*$highestColumn = $worksheet->getHighestDataColumn(); // количество столбцов буквами
+	echo "<br>" . "---" . "<br>"."highestColumn" . "=" . $highestColumn."<br>" . "---" . "<br>";
+
+	$highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn); //количество столбцов цифрами
+	echo "highestColumnIndex " . "=" . $highestColumnIndex;*/
+//--------------
+
+
+
+//Получаем количество строк
+	$highestRow = $worksheet->getHighestRow(); //количество строк
+
+
 //--Mergin cells
 	$mergeCell = $worksheet->getMergeCells(); //taking margin cells on the sheet
-	/*var_dump($mergeCell);*/
-	echo "<br>";
-
-
 // horizontalMarginArray
 	$horizontalMargin = preg_grep('"A\d"', $mergeCell);//taking horizontal margin cells A-start on the sheet
-	var_dump($horizontalMargin);
-	echo "<br>";
-	/*echo $horizontalMarginArray;*/
-
-	echo "<br>";
 	$margeCellCoordinate = array_keys($horizontalMargin);//-takes keys = cell coordinate
 
-
-	echo "<br>";
+//Получаем количество колонок через первую объединенную ячейку
 	//$margeCellCoordinate  - A1 / A5
-	foreach ($margeCellCoordinate AS $value)
-		$cellCoordinate = preg_replace('(:.*)', '', $margeCellCoordinate);
-	var_dump($cellCoordinate);
-	echo "<br>" . "------------------------------------------------";
-	echo "<br>";
+	foreach ($margeCellCoordinate AS $value) { //
+		$cellCoordinate = preg_replace('(.*:)', '', $value);//удаляем первую часть координат ячейки
+	}
+	$letterCellCoordinate = preg_replace('[\d]', '', $cellCoordinate[0]);//удаляем цыфру из координат ячейки - получаем "О"
+	$lastColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($letterCellCoordinate); //количество столбцов цифрами
 
-	//$cellCoordinateByRow  - dell A = 1 / 5 ...
-	var_dump($cellCoordinateByRow);
-	echo "<br>";
-
-	foreach ($cellCoordinate as $value)
-		$cellCoordinateByRow = preg_replace('(A)', '', $cellCoordinate);
-
-	var_dump($cellCoordinateByRow);
-	echo "<br>";
+//Выводим кол-во строк и колонок
+	echo "<br>" . "---" . "<br>" . "highestRow" . "=" . $highestRow  ;
+	echo "<br>" . "---" . "<br>" . "highestColumn" . "=" . $lastColumnIndex . "<br>" . "---" . "<br>";
 
 //Getting CATEGORY
-
-
-	foreach ($cellCoordinateByRow as $value) {
-		$check = $value;
-		/*print_r($check);*/
-
-		foreach ($cellCoordinate as $value)
-			if ($worksheet->getCell($value) != "" || $worksheet->getCellByColumnAndRow(4, $check) == "") {
-				$category = $worksheet->getCell($value)->getValue();
-
-				echo "<br>" . $category . "<>" . "=" . $value;
-				//break;
-			}
-
-	}
-	echo "<br>";
 
 	echo "CATEGORY IS " . $category;
 
 
 //--end Mergin cells
+
+	echo "<table border=\"1\">";
 	foreach ($rows AS $row) {
 
 		echo "<tr>";
