@@ -1,5 +1,8 @@
 <?php
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 require_once 'vendor/autoload.php';
 //include_once 'imgFromExcel.php';
 
@@ -127,18 +130,30 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 	echo "<br>" . "---" . "<br>" . "highestRow" . "=" . $highestRow  ;
 	echo "<br>" . "---" . "<br>" . "highestColumn" . "=" . $lastColumnIndex . "<br>" . "---" . "<br>";
 
+
+
 //Заполнияем MergeCells
-
+function fillMergedCells ($worksheet){
 	$mergedCellsRange = $worksheet->getMergeCells();
+	var_dump($mergedCellsRange );
 
+	//$cell= $worksheet->getSelectedCells($mergedCellsRange);
 	foreach($mergedCellsRange as $currMergedRange) {
-        $cell = [];
-        if($cell->isInRange($currMergedRange)) {
-		$currMergedCellsArray = PHPExcel_Cell::splitRange($currMergedRange);
-			$cell = $this->activeSheet->getCell($currMergedCellsArray[0][0]);
-			break;
+		echo "<pre>".$currMergedRange."</pre>";
+		//$cell=Coordinate::coordinateIsRange($currMergedRange);
+
+		if(Coordinate::coordinateIsRange($currMergedRange)) {
+		$currMergedCellsArray = Coordinate::splitRange($currMergedRange);
+		echo "<pre>".$currMergedCellsArray."</pre>";
+		var_dump($currMergedCellsArray );
+			$cell = $worksheet->getCell($currMergedCellsArray[0][0]);
+		echo "<pre>".$cell."</pre>";
+			//break;
 		}
 	}
+}
+
+	fillMergedCells($worksheet);
 
 //Getting CATEGORY
 
@@ -189,7 +204,6 @@ function printArrayAsTable($arr) {
     echo '</tbody>';
     echo '</table>';
 }
-
 function process($data) {
     $result = [];
 
@@ -213,6 +227,7 @@ function process($data) {
     return $result;
 }
 
+//Отсекаем пустые строки
 function isEmptyRow($row) {
     $empty = true;
     foreach($row as $item) {
@@ -224,6 +239,7 @@ function isEmptyRow($row) {
     return $empty;
 }
 
+//Отсекаем пустые колонки
 function removeEmptyColumns($data) {
     $columns = [];
 
