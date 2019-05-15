@@ -43,7 +43,20 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
     $worksheet = $spreadsheet->getSheet($sheetIndex);
     $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
 
-    $rows = $worksheet->toArray();
+	//--Mergin cells
+	/*$mergeCell = $worksheet->getMergeCells(); //taking margin cells on the sheet
+    var_dump($mergeCell);*/
+
+	//$worksheetMergeCell($worksheet);
+	echo "========================++++++++++++++++++++++++========================================" . '<br/>'
+		. "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
+
+	$worksheetArray = $worksheet->toArray();
+
+	//printArrayAsTable($worksheetArray);
+
+
+	//$rows = $worksheet->toArray();
     //======================================IMAGES
 /*
     $i = 0;
@@ -90,79 +103,27 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
 //======================================
 //-----------------
-    echo "========================++++++++++++++++++++++++========================================" . '<br/>'
-		. "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
-
-
-
-
-
-//--------------
-	//количество столбцов считает вместе с пустыми - не подходит
-	/*$highestColumn = $worksheet->getHighestDataColumn(); // количество столбцов буквами
-	echo "<br>" . "---" . "<br>"."highestColumn" . "=" . $highestColumn."<br>" . "---" . "<br>";
-
-	$highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumn); //количество столбцов цифрами
-	echo "highestColumnIndex " . "=" . $highestColumnIndex;*/
-//--------------
-
-
-
-//Получаем количество строк
-	$highestRow = $worksheet->getHighestRow(); //количество строк
-
-
-//--Mergin cells
-	$mergeCell = $worksheet->getMergeCells(); //taking margin cells on the sheet
-// horizontalMarginArray
-	$horizontalMargin = preg_grep('"A\d"', $mergeCell);//taking horizontal margin cells A-start on the sheet
-	$margeCellCoordinate = array_keys($horizontalMargin);//-takes keys = cell coordinate
-
-//Получаем количество колонок через первую объединенную ячейку
-	//$margeCellCoordinate  - A1 / A5
-	foreach ($margeCellCoordinate AS $value) { //
-		$cellCoordinate = preg_replace('(.*:)', '', $value);//удаляем первую часть координат ячейки
-	}
-	$letterCellCoordinate = preg_replace('[\d]', '', $cellCoordinate[0]);//удаляем цыфру из координат ячейки - получаем "О"
-	$lastColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($letterCellCoordinate); //количество столбцов цифрами
-
-//Выводим кол-во строк и колонок
-	echo "<br>" . "---" . "<br>" . "highestRow" . "=" . $highestRow  ;
-	echo "<br>" . "---" . "<br>" . "highestColumn" . "=" . $lastColumnIndex . "<br>" . "---" . "<br>";
-
 
 
 //Заполнияем MergeCells
 function fillMergedCells ($worksheet){
 	$mergedCellsRange = $worksheet->getMergeCells();
-	var_dump($mergedCellsRange );
-
-	//$cell= $worksheet->getSelectedCells($mergedCellsRange);
 	foreach($mergedCellsRange as $currMergedRange) {
 		echo "<pre>".$currMergedRange."</pre>";
-		//$cell=Coordinate::coordinateIsRange($currMergedRange);
-
 		if(Coordinate::coordinateIsRange($currMergedRange)) {
 		$currMergedCellsArray = Coordinate::splitRange($currMergedRange);
-		echo "<pre>".$currMergedCellsArray."</pre>";
-		var_dump($currMergedCellsArray );
 			$cell = $worksheet->getCell($currMergedCellsArray[0][0]);
 		echo "<pre>".$cell."</pre>";
-			//break;
+			break;
 		}
 	}
 }
 
 	fillMergedCells($worksheet);
 
-//Getting CATEGORY
-
-	echo "CATEGORY IS " . $category;
-
-
 //--end Mergin cells
 
-	echo "<table border=\"1\">";
+	/*echo "<table border=\"1\">";
 	foreach ($rows AS $row) {
 
 		echo "<tr>";
@@ -172,7 +133,7 @@ function fillMergedCells ($worksheet){
 
 	}
 	echo '<br/>';
-	echo "</table>";
+	echo "</table>";*/
 }
 
 
@@ -317,8 +278,9 @@ function pr($v) {
     <title></title>
 </head>
 <body>
-<h1></h1>
-<?//printArrayAsTable($data);?>
+<h1>Table of data</h1>
+
+<?php printArrayAsTable($worksheetArray); ?>
 
 <?//sendMessage($message);?>
 <!-- Optional JavaScript -->
