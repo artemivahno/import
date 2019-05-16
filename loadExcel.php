@@ -7,12 +7,11 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 require_once 'vendor/autoload.php';
 
 $inputFileName = $_FILES['uploadfile']["tmp_name"];
-echo 'TMP-FILE-NAME: ' . $inputFileName;
+echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
 
 $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
 
 $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
-echo '<br>';
 
 foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности Имена листов
     echo '<br/>' . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
@@ -26,9 +25,7 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
     echo "========================++++++++++++++++++++++++========================================" . '<br/>'
         . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 
-
     //printArrayAsTable($worksheetArray);
-
 
     //$rows = $worksheet->toArray();
     //======================================IMAGES
@@ -77,28 +74,30 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
     //Заполнияем MergeCells
     $mergedCellsRange = $worksheet->getMergeCells();
-    print_r($mergedCellsRange);
+    echo "MergeCells on thie sheet is - ";
+    pr($mergedCellsRange);
 
     foreach ($mergedCellsRange as $currMergedRange) {
 
         //A1,B1.C1
         $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);
-        echo "<br>" . "columnIndex";
-        print_r($columnIndex);
+
         $currMergedCellsArray = Coordinate::splitRange($currMergedRange);
 
-
+        //получаем значенеие первой ячейки
         $cellAdres = $currMergedCellsArray[0][0];
         $cell = $worksheet->getCell($cellAdres)->getValue();
-        //print_r($cell);
-
-        $currMergedRangeAr = $worksheet->rangeToArray($currMergedRange, $cell);
-        //print_r($currMergedRangeAr); //A1:O1
+        //заполняем все ячейки из первой
         foreach ($columnIndex as $adres) {
             $worksheet->setCellValue($adres, $cell);
         }
     }
+
+
     $worksheetArray = $worksheet->toArray();
+
+    $worksheetArray = process($worksheetArray);
+
     printArrayAsTable($worksheetArray);
 
 }
@@ -136,17 +135,13 @@ function printArrayAsTable($arr)
 
 function process($data)
 {
-    $result = [];
-
     $data = removeEmptyColumns($data);
-
     foreach ($data as $item) {
         if (isEmptyRow($item)) {
             continue;
         }
         $result[] = $item;
     }
-
     $category = '';
     foreach ($result as $k => $row) {
         if (isCategoryRow($row)) {
@@ -156,11 +151,14 @@ function process($data)
     }
 
     return $result;
+
 }
 
 //Отсекаем пустые строки
 function isEmptyRow($row)
 {
+    //pr($row);
+    //die("asdf");
     $empty = true;
     foreach ($row as $item) {
         if (!empty($item)) {
@@ -175,12 +173,14 @@ function isEmptyRow($row)
 function removeEmptyColumns($data)
 {
     $columns = [];
-
     if (empty($data[0])) {
+        echo "gecnjq";
+
         return [];
     }
 
     $columns = array_keys($data[0]);
+    //pr($columns);
     foreach ($columns as $k => $item) {
         $columns[$k] = false;
     }
@@ -217,18 +217,17 @@ function removeEmptyColumns($data)
 function isCategoryRow($row)
 {
     $result = true;
-    if (empty($row[0])) {
+    if ($row[0] !== $row[1]) {
         return false;
     }
 
     foreach ($row as $k => $item) {
-        if ($k > 0) {
+        if ($k[0] > 0) {
             if (!empty($item)) {
                 return false;
             }
         }
     }
-
     return true;
 }
 
