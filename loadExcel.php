@@ -74,16 +74,15 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
     //Заполнияем MergeCells
     $mergedCellsRange = $worksheet->getMergeCells();
-    echo "MergeCells on thie sheet is - ";
-    pr($mergedCellsRange);
+    /*echo "MergeCells on thie sheet is - ";
+    pr($mergedCellsRange);*/
 
     foreach ($mergedCellsRange as $currMergedRange) {
 
         //A1,B1.C1
         $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);
-
+        //freom A1:O1       get array A1,O1
         $currMergedCellsArray = Coordinate::splitRange($currMergedRange);
-
         //получаем значенеие первой ячейки
         $cellAdres = $currMergedCellsArray[0][0];
         $cell = $worksheet->getCell($cellAdres)->getValue();
@@ -93,14 +92,43 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
         }
     }
 
-
+    //преобразуем в array
     $worksheetArray = $worksheet->toArray();
 
     $worksheetArray = process($worksheetArray);
+    $worksheetArray = dellCategoryRow($worksheetArray);
 
-    printArrayAsTable($worksheetArray);
+    $alias = array(
+        "Category" => "CategoryAliasValue",
+
+        "Product" => "ProductAliasValue",
+        "PRODUCT" => "ProductAliasValue",
+        "Name" => "ProductAliasValue",
+
+        "Image" => "ImageAliasValue",
+        "IMAGE" => "ImageAliasValue",
+        "Picture" => "ImageAliasValue",
+
+        "EAN CODE" => "CodeAliasValue",
+        "EAN Code" => "CodeAliasValue",
+
+        "Colors" => "ColorAliasValue",
+        "COLORS" => "ColorAliasValue",
+        "Color" => "ColorAliasValue",
+        "colors" => "ColorAliasValue",
+
+        "Description" => "DescriptionAliasValue",
+        " DESCRIPTION" => "DescriptionAliasValue",
+        "DESCRIPTION" => "DescriptionAliasValue",
+
+    );
+
+    $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
+    printArrayAsTable($worksheetArray);//печатаем таблицу
+
 
 }
+
 
 
 function printArrayAsTable($arr)
@@ -142,6 +170,7 @@ function process($data)
         }
         $result[] = $item;
     }
+    //fill category column
     $category = '';
     foreach ($result as $k => $row) {
         if (isCategoryRow($row)) {
@@ -149,7 +178,6 @@ function process($data)
         }
         array_unshift($result[$k], $category);
     }
-
     return $result;
 
 }
@@ -157,8 +185,6 @@ function process($data)
 //Отсекаем пустые строки
 function isEmptyRow($row)
 {
-    //pr($row);
-    //die("asdf");
     $empty = true;
     foreach ($row as $item) {
         if (!empty($item)) {
@@ -174,13 +200,10 @@ function removeEmptyColumns($data)
 {
     $columns = [];
     if (empty($data[0])) {
-        echo "gecnjq";
-
         return [];
     }
 
     $columns = array_keys($data[0]);
-    //pr($columns);
     foreach ($columns as $k => $item) {
         $columns[$k] = false;
     }
@@ -209,6 +232,7 @@ function removeEmptyColumns($data)
             }
         }
         $result[] = $newrow;
+
     }
 
     return $result;
@@ -231,6 +255,21 @@ function isCategoryRow($row)
     return true;
 }
 
+function dellCategoryRow($data)
+{
+    $new = [];
+    foreach ($data as $row) {
+        if (isCategoryRow($row)) {
+            continue;
+        }
+        $new[] = $row;
+    }
+    $result = $new;
+    $result[0][0] = 'Category';
+    return $result;
+}
+
+
 function pr($v)
 {
     echo '<pre>';
@@ -238,28 +277,25 @@ function pr($v)
     echo '</pre>';
 }
 
-$aliases = [
-    "Product" => "ProductAliasValue",
-    "PRODUCT" => "ProductAliasValue",
-    "Name" => "ProductAliasValue",
 
-    "Image" => "ImageAliasValue",
-    "Image" => "ImageAliasValue",
-    "IMAGE" => "ImageAliasValue",
-    "Picture" => "ImageAliasValue",
+function setAlias($inputArray, $alias)
+{
+    foreach ($inputArray as $row) {
+        if ($row[0] == 'Category') {
+            $tmpArray = [];
+            foreach ($row as $cell) {
+                $cell = trim($cell);
+                if (isset($alias[$cell]) || array_key_exists($cell, $inputArray)) {
+                    $cell = $alias[$cell];
+                }
+                $tmpArray[] = $cell;
+            }
+        }
+    }
+    $inputArray[0] = $tmpArray;
+    return $inputArray;
+}
 
-    "EAN\ CODE" => "CodeAliasValue",
-    "EAN\ Code" => "CodeAliasValue",
-
-    "Colors" => "ColorAliasValue",
-    "COLORS" => "ColorAliasValue",
-    "Color" => "ColorAliasValue",
-    "colors" => "ColorAliasValue",
-
-    "Description" => "DescriptionAliasValue",
-    "DESCRIPTION" => "DescriptionAliasValue",
-
-];
 
 ?>
 <!doctype html>
