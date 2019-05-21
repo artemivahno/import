@@ -105,9 +105,10 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
         "PRODUCT" => "ProductAliasValue",
         "Name" => "ProductAliasValue",
 
-        "Image" => "ImageAliasValue",
-        "IMAGE" => "ImageAliasValue",
-        "Picture" => "ImageAliasValue",
+        //"Image" => "ImageAliasValue",
+        //"IMAGE" => "ImageAliasValue",
+        //"Picture" => "ImageAliasValue",
+
 
         "EAN CODE" => "CodeAliasValue",
         "EAN Code" => "CodeAliasValue",
@@ -118,12 +119,29 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
         "colors" => "ColorAliasValue",
 
         "Description" => "DescriptionAliasValue",
-        " DESCRIPTION" => "DescriptionAliasValue",
         "DESCRIPTION" => "DescriptionAliasValue",
 
+        "Price (USD)" => "Price(USD)Alias",
+
+        "MSRP (USD)" => "MSRP (USD)Alias",
+
+        "Product Weight (g)" => "Product Weight (g)Alias",
+
+        "Carton Weight (kg)" => "Carton Weight (kg)Alias",
+
+        "Color box Size (cm)" => "Color box Size (cm)Alias",
+
+        "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
+
+        "Small box Size(cm)" => "Small box Size(cm)Alias",
+
+        "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
+
+        "Carton Size(cm)" => "Carton Size(cm)Alias",
     );
 
     $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
+    //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
     printArrayAsTable($worksheetArray);//печатаем таблицу
 
 
@@ -284,8 +302,10 @@ function setAlias($inputArray, $alias)
         if ($row[0] == 'Category') {
             $tmpArray = [];
             foreach ($row as $cell) {
-                $cell = trim($cell);
                 if (isset($alias[$cell]) || array_key_exists($cell, $inputArray)) {
+                    $cell = preg_replace('/\t\n\r/', ' ', $cell);
+                    $cell = preg_replace('/\s\s+/', ' ', $cell);
+                    $cell = trim($cell,"\t\n\r");
                     $cell = $alias[$cell];
                 }
                 $tmpArray[] = $cell;

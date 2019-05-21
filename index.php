@@ -23,7 +23,7 @@
         <br>
 	    <input name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
         <br>
-        <button type="submit" class="btn btn-primary pull-right" <!--disabled-->>Загрузить</button>
+        <button type="submit" class="btn btn-primary pull-right"> Загрузить</button>
         <button type="reset" class="btn btn-danger">Отмена</button>
     </div>
 </form>
