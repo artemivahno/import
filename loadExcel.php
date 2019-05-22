@@ -122,14 +122,19 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
         "DESCRIPTION" => "DescriptionAliasValue",
 
         "Price (USD)" => "Price(USD)Alias",
+        "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
+        "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
+        "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
 
         "MSRP (USD)" => "MSRP (USD)Alias",
 
+        "Product Weight (g)" => "Product Weight (g)Alias",
         "Product Weight (g)" => "Product Weight (g)Alias",
 
         "Carton Weight (kg)" => "Carton Weight (kg)Alias",
 
         "Color box Size (cm)" => "Color box Size (cm)Alias",
+        "Color box size (cm)" => "Color box Size (cm)Alias",
 
         "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
 
@@ -295,6 +300,10 @@ function pr($v)
     echo '</pre>';
 }
 
+function trimall ($string) {
+    return preg_replace("/(^\s*)|(\s*$)/","",
+        preg_replace("/\s+/"," ",trim($string)));
+}
 
 function setAlias($inputArray, $alias)
 {
@@ -302,10 +311,9 @@ function setAlias($inputArray, $alias)
         if ($row[0] == 'Category') {
             $tmpArray = [];
             foreach ($row as $cell) {
+                $cell = preg_replace('/\t\n\r/', '', $cell);
+                $cell=trimall($cell);
                 if (isset($alias[$cell]) || array_key_exists($cell, $inputArray)) {
-                    $cell = preg_replace('/\t\n\r/', ' ', $cell);
-                    $cell = preg_replace('/\s\s+/', ' ', $cell);
-                    $cell = trim($cell,"\t\n\r");
                     $cell = $alias[$cell];
                 }
                 $tmpArray[] = $cell;
