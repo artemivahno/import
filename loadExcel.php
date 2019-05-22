@@ -129,7 +129,6 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
         "MSRP (USD)" => "MSRP (USD)Alias",
 
         "Product Weight (g)" => "Product Weight (g)Alias",
-        "Product Weight (g)" => "Product Weight (g)Alias",
 
         "Carton Weight (kg)" => "Carton Weight (kg)Alias",
 
@@ -146,7 +145,8 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
     );
 
     $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
-    $worksheetArray = setCodeAsKey($worksheetArray); //меняем название колонок на Алиасы
+    $worksheetArray = setCodeAsKey($worksheetArray); //меняем ключ стороки на код товара
+    //$worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца
 
 
     pr($worksheetArray);
@@ -334,24 +334,40 @@ function setCodeAsKey($inputArray)
 {
     foreach ($inputArray as $row) {
         $tmpArray = [];
-        $tmpArray2 = [];
+
         if (array_search('CodeAliasValue', $row) == true) {
             $codeKey = array_search('CodeAliasValue', $row);
-            $collumnArray = array_values($row); //массив имен колонок
             //pr($collumnArray);
         }
         $codeValue = $row[$codeKey];
-        pr($codeValue);
+        //pr($codeValue);
 
         $tmpArray[] = $codeValue;
         $tmpArray = array_fill_keys($tmpArray, $row);
+        //pr($tmpArray);
 
-        //добавляем имена колонок в ключи
-        $tmpArray2 = array_combine($collumnArray, array_values($row));
+        $tmpArray2[] = $tmpArray;
     }
-    pr($tmpArray2);
-    $inputArray = $tmpArray;
+    $inputArray = $tmpArray2;
 
+    return $inputArray;
+}
+
+function setCollumnAsKey($inputArray)
+{
+    foreach ($inputArray as $row) {
+        pr($row);
+        $tmpArray2 = [];
+        if (array_search('CodeAliasValue', $row) == true) {
+            $collumnArray = array_values($row); //массив имен колонок
+        }
+        //pr($collumnArray);
+//добавляем имена колонок в ключи
+        //$tmpArray2 = array_combine($collumnArray, array_values($row));
+        //pr($tmpArray2);
+
+    }
+    $inputArray = $tmpArray2;
 
     return $inputArray;
 }
