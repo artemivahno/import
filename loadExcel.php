@@ -146,12 +146,15 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
     );
 
     $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
+    $worksheetArray = setCodeAsKey($worksheetArray); //меняем название колонок на Алиасы
+
+
+    pr($worksheetArray);
     //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
-    printArrayAsTable($worksheetArray);//печатаем таблицу
+    //printArrayAsTable($worksheetArray);//печатаем таблицу
 
 
 }
-
 
 
 function printArrayAsTable($arr)
@@ -300,9 +303,10 @@ function pr($v)
     echo '</pre>';
 }
 
-function trimall ($string) {
-    return preg_replace("/(^\s*)|(\s*$)/","",
-        preg_replace("/\s+/"," ",trim($string)));
+function trimall($string)
+{
+    return preg_replace("/(^\s*)|(\s*$)/", "",
+        preg_replace("/\s+/", " ", trim($string)));
 }
 
 function setAlias($inputArray, $alias)
@@ -312,7 +316,7 @@ function setAlias($inputArray, $alias)
             $tmpArray = [];
             foreach ($row as $cell) {
                 $cell = preg_replace('/\t\n\r/', '', $cell);
-                $cell=trimall($cell);
+                $cell = trimall($cell);
                 if (isset($alias[$cell]) || array_key_exists($cell, $inputArray)) {
                     $cell = $alias[$cell];
                 }
@@ -324,6 +328,36 @@ function setAlias($inputArray, $alias)
     return $inputArray;
 }
 
+function setCodeAsKey($inputArray)
+{
+    foreach ($inputArray as $row) {
+        $tmpArray = [];
+        if (array_search('CodeAliasValue', $row) == true) {
+            $codeKey = array_search('CodeAliasValue', $row);
+            $collumnArray[] = array_values($row);
+            //pr($collumnArray);
+        }
+        $codeValue = $row[$codeKey];
+        //pr($codeValue);
+
+        $tmpArray[] = $codeValue;
+        $tmpArray = array_fill_keys($tmpArray, $row);
+        //pr($row);
+        //добавляем имена колонок в ключи
+
+        foreach ($row as $cell) {
+            $tmpArray2 = array_fill_keys($collumnArray, $cell);
+            //pr($collumnArray);
+        }
+        //$collumnArray[] = $cell;
+        //pr($tmpArray);
+    }
+    pr($tmpArray2);
+    $inputArray = $tmpArray;
+
+
+    return $inputArray;
+}
 
 ?>
 <!doctype html>
