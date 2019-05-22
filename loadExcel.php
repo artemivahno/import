@@ -204,11 +204,13 @@ function process($data)
         }
         array_unshift($result[$k], $category);
     }
+
     return $result;
 
 }
 
 //Отсекаем пустые строки
+
 function isEmptyRow($row)
 {
     $empty = true;
@@ -332,25 +334,20 @@ function setCodeAsKey($inputArray)
 {
     foreach ($inputArray as $row) {
         $tmpArray = [];
+        $tmpArray2 = [];
         if (array_search('CodeAliasValue', $row) == true) {
             $codeKey = array_search('CodeAliasValue', $row);
-            $collumnArray[] = array_values($row);
+            $collumnArray = array_values($row); //массив имен колонок
             //pr($collumnArray);
         }
         $codeValue = $row[$codeKey];
-        //pr($codeValue);
+        pr($codeValue);
 
         $tmpArray[] = $codeValue;
         $tmpArray = array_fill_keys($tmpArray, $row);
-        //pr($row);
-        //добавляем имена колонок в ключи
 
-        foreach ($row as $cell) {
-            $tmpArray2 = array_fill_keys($collumnArray, $cell);
-            //pr($collumnArray);
-        }
-        //$collumnArray[] = $cell;
-        //pr($tmpArray);
+        //добавляем имена колонок в ключи
+        $tmpArray2 = array_combine($collumnArray, array_values($row));
     }
     pr($tmpArray2);
     $inputArray = $tmpArray;
