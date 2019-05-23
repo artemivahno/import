@@ -145,8 +145,8 @@ foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
     );
 
     $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
-    $worksheetArray = setCodeAsKey($worksheetArray); //меняем ключ стороки на код товара
-    //$worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца
+    //$worksheetArray = setCodeAsKey($worksheetArray); //
+    $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
 
 
     pr($worksheetArray);
@@ -330,45 +330,22 @@ function setAlias($inputArray, $alias)
     return $inputArray;
 }
 
-function setCodeAsKey($inputArray)
-{
-    foreach ($inputArray as $row) {
-        $tmpArray = [];
-
-        if (array_search('CodeAliasValue', $row) == true) {
-            $codeKey = array_search('CodeAliasValue', $row);
-            //pr($collumnArray);
-        }
-        $codeValue = $row[$codeKey];
-        //pr($codeValue);
-
-        $tmpArray[] = $codeValue;
-        $tmpArray = array_fill_keys($tmpArray, $row);
-        //pr($tmpArray);
-
-        $tmpArray2[] = $tmpArray;
-    }
-    $inputArray = $tmpArray2;
-
-    return $inputArray;
-}
-
 function setCollumnAsKey($inputArray)
 {
+    $tmpArray = [];
+    $tmpArray2 = [];
     foreach ($inputArray as $row) {
-        pr($row);
-        $tmpArray2 = [];
-        if (array_search('CodeAliasValue', $row) == true) {
+
+        //определяем строку заголовков
+        if (array_search('ProductAliasValue', $row) == true) {
             $collumnArray = array_values($row); //массив имен колонок
+            $tmp = $collumnArray;
         }
-        //pr($collumnArray);
-//добавляем имена колонок в ключи
-        //$tmpArray2 = array_combine($collumnArray, array_values($row));
-        //pr($tmpArray2);
-
+        //добавляем имена колонок в ключи
+        $tmpArray2 = array_combine($tmp, $row);
+        $tmpArray[$tmpArray2['CodeAliasValue']] = $tmpArray2;
     }
-    $inputArray = $tmpArray2;
-
+    $inputArray = $tmpArray;
     return $inputArray;
 }
 
