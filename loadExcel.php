@@ -2,160 +2,129 @@
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 require_once 'vendor/autoload.php';
+//require_once 'connection.php';
 
+//$connection = new Connection();
 $inputFileName = $_FILES['uploadfile']["tmp_name"];
 echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
 
-$spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
+$excelArray = [];
 
-$loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
-
-foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности Имена листов
-    echo '<br/>' . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
-}
 // выводим весь ezcel
-foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
+function getExcelData($inputFileName)
+{
+    $allExcelSheet = [];
+    $worksheetArray = [];
+    $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
 
-    $worksheet = $spreadsheet->getSheet($sheetIndex);
-    $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
+    $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
 
-    echo "========================++++++++++++++++++++++++========================================" . '<br/>'
-        . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
+    /*foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности Имена листов
+        echo '<br/>' . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
+    }*/
+    foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
-    //printArrayAsTable($worksheetArray);
+        $worksheet = $spreadsheet->getSheet($sheetIndex);
+        $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
 
-    //$rows = $worksheet->toArray();
-    //======================================IMAGES
-    /*
-        $i = 0;
-        @mkdir("files", 0777);
-        @mkdir("files/$loadedSheetName", 0777);
-        $uploaddir = "./files/$loadedSheetName";
+        echo "========================++++++++++++++++++++++++========================================" . '<br/>'
+            . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
 
-        foreach ($worksheet->getDrawingCollection() as $drawing) {
-                if ($drawing instanceof \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing) {
-                    ob_start();
-                    call_user_func(
-                        $drawing->getRenderingFunction(),
-                        $drawing->getImageResource()
-                    );
-                    $imageContents = ob_get_contents();
-                    ob_end_clean();
-                    switch ($drawing->getMimeType()) {
-                        case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_PNG :
-                            $extension = 'png';
-                            break;
-                        case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_GIF:
-                            $extension = 'gif';
-                            break;
-                        case \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::MIMETYPE_JPEG :
-                            $extension = 'jpg';
-                            break;
-                    }
-                } else {
-                    $zipReader = fopen($drawing->getPath(), 'r');
-                    $imageContents = '';
-                    while (!feof($zipReader)) {
-                        $imageContents .= fread($zipReader, 1024);
-                    }
-                    fclose($zipReader);
-                    $extension = $drawing->getExtension();
-                }
-            $myFileName = $uploaddir . '/'.$loadedSheetName.'_'.$sheetIndex.'_Image_' . ++$i . '.' . $extension; //Имя файла картинки
-            file_put_contents($myFileName, $imageContents);
-            echo "<pre>";print_r($drawing->getCoordinates());echo "</pre><hr>";
+
+        //Заполнияем MergeCells
+        $mergedCellsRange = $worksheet->getMergeCells();
+        /*echo "MergeCells on thie sheet is - ";
+        pr($mergedCellsRange);*/
+
+        foreach ($mergedCellsRange as $currMergedRange) {
+
+            //A1,B1.C1
+            $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);
+            //freom A1:O1       get array A1,O1
+            $currMergedCellsArray = Coordinate::splitRange($currMergedRange);
+            //получаем значенеие первой ячейки
+            $cellAdres = $currMergedCellsArray[0][0];
+            $cell = $worksheet->getCell($cellAdres)->getValue();
+            //заполняем все ячейки из первой
+            foreach ($columnIndex as $adres) {
+                $worksheet->setCellValue($adres, $cell);
+            }
         }
-        die("sdfgsdf");
-        echo "ALL IMAGES ARE SAVED";*/
-//======================================
 
-    //Заполнияем MergeCells
-    $mergedCellsRange = $worksheet->getMergeCells();
-    /*echo "MergeCells on thie sheet is - ";
-    pr($mergedCellsRange);*/
+        //преобразуем в array
+        $worksheetArray = $worksheet->toArray();
 
-    foreach ($mergedCellsRange as $currMergedRange) {
+        $worksheetArray = process($worksheetArray);
+        $worksheetArray = dellCategoryRow($worksheetArray);
 
-        //A1,B1.C1
-        $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);
-        //freom A1:O1       get array A1,O1
-        $currMergedCellsArray = Coordinate::splitRange($currMergedRange);
-        //получаем значенеие первой ячейки
-        $cellAdres = $currMergedCellsArray[0][0];
-        $cell = $worksheet->getCell($cellAdres)->getValue();
-        //заполняем все ячейки из первой
-        foreach ($columnIndex as $adres) {
-            $worksheet->setCellValue($adres, $cell);
-        }
+        $alias = array(
+            "Category" => "CategoryAliasValue",
+
+            "Product" => "ProductAliasValue",
+            "PRODUCT" => "ProductAliasValue",
+            "Name" => "ProductAliasValue",
+
+            //"Image" => "ImageAliasValue",
+            //"IMAGE" => "ImageAliasValue",
+            //"Picture" => "ImageAliasValue",
+
+
+            "EAN CODE" => "CodeAliasValue",
+            "EAN Code" => "CodeAliasValue",
+
+            "Colors" => "ColorAliasValue",
+            "COLORS" => "ColorAliasValue",
+            "Color" => "ColorAliasValue",
+            "colors" => "ColorAliasValue",
+
+            "Description" => "DescriptionAliasValue",
+            "DESCRIPTION" => "DescriptionAliasValue",
+
+            "Price (USD)" => "Price(USD)Alias",
+            "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
+            "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
+            "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
+
+            "MSRP (USD)" => "MSRP (USD)Alias",
+
+            "Product Weight (g)" => "Product Weight (g)Alias",
+
+            "Carton Weight (kg)" => "Carton Weight (kg)Alias",
+
+            "Color box Size (cm)" => "Color box Size (cm)Alias",
+            "Color box size (cm)" => "Color box Size (cm)Alias",
+
+            "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
+
+            "Small box Size(cm)" => "Small box Size(cm)Alias",
+
+            "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
+
+            "Carton Size(cm)" => "Carton Size(cm)Alias",
+        );
+
+        $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
+        $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
+
+        //pr($worksheetArray);
+        //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
+        //printArrayAsTable($worksheetArray);//печатаем таблицу
+
+        $allExcelSheet = $worksheetArray;
     }
-
-    //преобразуем в array
-    $worksheetArray = $worksheet->toArray();
-
-    $worksheetArray = process($worksheetArray);
-    $worksheetArray = dellCategoryRow($worksheetArray);
-
-    $alias = array(
-        "Category" => "CategoryAliasValue",
-
-        "Product" => "ProductAliasValue",
-        "PRODUCT" => "ProductAliasValue",
-        "Name" => "ProductAliasValue",
-
-        //"Image" => "ImageAliasValue",
-        //"IMAGE" => "ImageAliasValue",
-        //"Picture" => "ImageAliasValue",
-
-
-        "EAN CODE" => "CodeAliasValue",
-        "EAN Code" => "CodeAliasValue",
-
-        "Colors" => "ColorAliasValue",
-        "COLORS" => "ColorAliasValue",
-        "Color" => "ColorAliasValue",
-        "colors" => "ColorAliasValue",
-
-        "Description" => "DescriptionAliasValue",
-        "DESCRIPTION" => "DescriptionAliasValue",
-
-        "Price (USD)" => "Price(USD)Alias",
-        "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
-        "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
-        "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
-
-        "MSRP (USD)" => "MSRP (USD)Alias",
-
-        "Product Weight (g)" => "Product Weight (g)Alias",
-
-        "Carton Weight (kg)" => "Carton Weight (kg)Alias",
-
-        "Color box Size (cm)" => "Color box Size (cm)Alias",
-        "Color box size (cm)" => "Color box Size (cm)Alias",
-
-        "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
-
-        "Small box Size(cm)" => "Small box Size(cm)Alias",
-
-        "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
-
-        "Carton Size(cm)" => "Carton Size(cm)Alias",
-    );
-
-    $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
-    //$worksheetArray = setCodeAsKey($worksheetArray); //
-    $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
-
-
-    pr($worksheetArray);
-    //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
-    //printArrayAsTable($worksheetArray);//печатаем таблицу
-
+    pr($allExcelSheet);
+    return $allExcelSheet;
 
 }
+$excelArray = getExcelData($inputFileName);
 
+//pr($excelArray);
+
+$query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+$dbArray = dbQueryArray($query);
+//pr($dbArray);
 
 function printArrayAsTable($arr)
 {
@@ -347,6 +316,50 @@ function setCollumnAsKey($inputArray)
     }
     $inputArray = $tmpArray;
     return $inputArray;
+}
+
+//=====DATABASE ==================================
+
+function dbQuery($query = '')
+{
+    $dbHost = "localhost";
+    $dbUsername = "root";
+    $dbPassword = "";
+    $dbName = "products";
+
+
+    $link = mysqli_connect("$dbHost", "$dbUsername",
+        "$dbPassword", "$dbName")
+    or die("Couldn't connect to the MySQL server\n");
+    mysqli_query($link, 'SET NAMES utf8')
+    or die("Invalid set utf8 " . mysqli_error($link) . "\n");
+    $db = mysqli_select_db($link, $dbName)
+    or die("db can't be selected\n");
+
+    $result = mysqli_query($link, $query)
+    or die("Query error: " . mysqli_error($link) . '[' . $query . ']' . "\n");
+    mysqli_close($link);
+    return $result;
+}
+
+function dbQueryArray($query = '')
+{
+    $result = dbQuery($query);
+    $data = array();
+    while ($row = mysqli_fetch_assoc($result)) {
+        $data[] = $row;
+    }
+    mysqli_free_result($result);
+
+    return $data;
+}
+
+//=====DATABASE ==================================
+
+function compareExistance($dbArray, $excelArray)
+{
+
+
 }
 
 ?>
