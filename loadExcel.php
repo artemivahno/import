@@ -15,10 +15,9 @@ $excelArray = [];
 // выводим весь ezcel
 function getExcelData($inputFileName)
 {
-    $allExcelSheet = [];
     $worksheetArray = [];
+    $allExcelSheet = [];
     $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
-
     $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
 
     /*foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности Имена листов
@@ -29,14 +28,11 @@ function getExcelData($inputFileName)
         $worksheet = $spreadsheet->getSheet($sheetIndex);
         $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
 
-        echo "========================++++++++++++++++++++++++========================================" . '<br/>'
-            . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
-
+        /*echo "========================++++++++++++++++++++++++========================================" . '<br/>'
+            . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';*/
 
         //Заполнияем MergeCells
         $mergedCellsRange = $worksheet->getMergeCells();
-        /*echo "MergeCells on thie sheet is - ";
-        pr($mergedCellsRange);*/
 
         foreach ($mergedCellsRange as $currMergedRange) {
 
@@ -65,11 +61,6 @@ function getExcelData($inputFileName)
             "Product" => "ProductAliasValue",
             "PRODUCT" => "ProductAliasValue",
             "Name" => "ProductAliasValue",
-
-            //"Image" => "ImageAliasValue",
-            //"IMAGE" => "ImageAliasValue",
-            //"Picture" => "ImageAliasValue",
-
 
             "EAN CODE" => "CodeAliasValue",
             "EAN Code" => "CodeAliasValue",
@@ -108,19 +99,20 @@ function getExcelData($inputFileName)
         $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
         $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
 
-        //pr($worksheetArray);
+       // pr($worksheetArray);
         //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
         //printArrayAsTable($worksheetArray);//печатаем таблицу
 
-        $allExcelSheet = $worksheetArray;
+        $allExcelSheet[$loadedSheetName] = $worksheetArray;
+
     }
-    pr($allExcelSheet);
+    //pr($allExcelSheet);
     return $allExcelSheet;
 
 }
 $excelArray = getExcelData($inputFileName);
 
-//pr($excelArray);
+pr($excelArray);
 
 $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
 $dbArray = dbQueryArray($query);
