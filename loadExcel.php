@@ -99,7 +99,7 @@ function getExcelData($inputFileName)
         $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
         $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
 
-       // pr($worksheetArray);
+        // pr($worksheetArray);
         //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
         //printArrayAsTable($worksheetArray);//печатаем таблицу
 
@@ -110,13 +110,49 @@ function getExcelData($inputFileName)
     return $allExcelSheet;
 
 }
+
 $excelArray = getExcelData($inputFileName);
 
-pr($excelArray);
+//pr($excelArray);
 
 $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+$query = "SELECT `barcodes` FROM ms_products";
 $dbArray = dbQueryArray($query);
-//pr($dbArray);
+
+function compareExistance($dbArray, $excelArray)
+{
+    $diffBarcodes = [];
+    //pr($excelArray);
+    //получаем ключи из Базы
+    $dbBarcodes = array_column($dbArray, 'barcodes');
+    //pr($dbBarcodes);
+    //получаем ключи из excel
+    foreach ($excelArray as $row) {
+        $excelBarcodes[] = array_column($row, 'CodeAliasValue');
+        // pr($excelBarcodes);
+    }
+    //объединяем все Barcodes из excel и удаляем дубли
+    foreach ($excelBarcodes as $value) {
+        $diffBarcodes = array_merge($diffBarcodes, $value);
+    }
+    $diffBarcodes = array_unique($diffBarcodes);
+    echo 'excelBarcodes: ';
+    pr($diffBarcodes);
+
+    //сравниваем excel и базу
+    $diffBarcodes1 = array_diff($diffBarcodes, $dbBarcodes);
+    echo "Новые товары не представленные в Базе данных: ";
+    pr($diffBarcodes1);
+
+    $sameBarcodes = array_uintersect($dbBarcodes, $diffBarcodes, 'strcasecmp');
+    echo "Товары представленные в Базе данных: ";
+    pr($sameBarcodes);
+
+    return $diffBarcodes;
+}
+
+$tmp = compareExistance($dbArray, $excelArray);
+//pr($tmp);
 
 function printArrayAsTable($arr)
 {
@@ -295,15 +331,23 @@ function setCollumnAsKey($inputArray)
 {
     $tmpArray = [];
     $tmpArray2 = [];
+    ///pr($inputArray);
     foreach ($inputArray as $row) {
-
         //определяем строку заголовков
         if (array_search('ProductAliasValue', $row) == true) {
             $collumnArray = array_values($row); //массив имен колонок
-            $tmp = $collumnArray;
+            if (!empty($collumnArray)) {
+                $tmp = $collumnArray;
+            }
+            //pr($row);
         }
+        //pr($tmp);
         //добавляем имена колонок в ключи
-        $tmpArray2 = array_combine($tmp, $row);
+//TODO - ВЫСКАКИВАЕТ ОШИБКА ПО array_combine на файле b2eb7fb725bfa61e (1)
+        if (!empty($tmp) || !empty($row)) {
+            //echo "Не пустой";
+            $tmpArray2 = array_combine($tmp, $row);
+        }
         $tmpArray[$tmpArray2['CodeAliasValue']] = $tmpArray2;
     }
     $inputArray = $tmpArray;
@@ -348,11 +392,6 @@ function dbQueryArray($query = '')
 
 //=====DATABASE ==================================
 
-function compareExistance($dbArray, $excelArray)
-{
-
-
-}
 
 ?>
 <!doctype html>
