@@ -11,7 +11,6 @@ $inputFileName = $_FILES['uploadfile']["name"];
 echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
 
 
-
 $excelArray = [];
 
 // выводим весь ezcel
@@ -54,7 +53,7 @@ function getExcelData($inputFileName)
         //преобразуем в array
         $worksheetArray = $worksheet->toArray();
         $worksheetArray = process($worksheetArray);
-        $worksheetArrayPrint=[];
+        $worksheetArrayPrint = [];
         $worksheetArray = dellCategoryRow($worksheetArray);
         $worksheetArrayPrint = $worksheetArray;
 
@@ -121,12 +120,13 @@ $excelArray = getExcelData($inputTmpFileName);
 
 //pr($excelArray);
 
-//$query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
-$query = "SELECT `barcodes` FROM ms_products";
-$dbArray = dbQueryArray($query);
+$query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+$query1 = "SELECT `barcodes` FROM ms_products";
+$dbArray = dbQueryArray($query1);
+
 //запускаем сравнение базы и Excel
 $tmp = compareExistance($dbArray, $excelArray);
-//pr($tmp);
+//pr($excelArray);
 
 function compareExistance($dbArray, $excelArray)
 {
@@ -147,16 +147,20 @@ function compareExistance($dbArray, $excelArray)
     //trim excelBarcodes
     foreach ($excelBarcodes as $row) {
         foreach ($row as $value) {
-
             $tmpArray[] = trim($value);
         }
     }
     $excelBarcodes = $tmpArray;
 
     //сравниваем excel и базу
-    $diffBarcodes1 = array_diff($excelBarcodes, $dbBarcodes);
-    //echo "Новые товары не представленные в Базе данных: ";
-    //pr($diffBarcodes1);
+    $diffBarcodes = array_diff($excelBarcodes, $dbBarcodes);
+    $diffBarcodes = array_unique ($diffBarcodes);
+    pr($diffBarcodes);
+    $missingProducts = [];
+    $i=1;
+
+
+
 
     $sameBarcodes = array_uintersect($dbBarcodes, $excelBarcodes, 'strcasecmp');
     //echo "Товары представленные в Базе данных: ";
@@ -421,44 +425,51 @@ function dbQueryArray($query = '')
 <body>
 
 <hr>
-<div class="container"><h1>Таблица данных из Excel файла <?php echo $inputFileName; ?></h1></div>
+<div class="container"><h1>Сводные таблицы</h1></div>
 
 <div id="exTab2" class="container">
-
 
 
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
-               aria-selected="true">Home</a>
+               aria-selected="true">Из Excel</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
-               aria-selected="false">Profile</a>
+               aria-selected="false">Из Базы Данных</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact"
-               aria-selected="false">Contact</a>
+               aria-selected="false">Новые товары</a>
         </li>
     </ul>
 
 
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
-            <h3>Standard tab panel created on bootstrap using nav-tabs</h3>
-            <?php $table = getExcelData($inputTmpFileName);
-            foreach ($table as $row){
-                printArrayAsTable($row);
+            <h2>Таблица данных из Excel файла <?php echo $inputFileName; ?></h2>
+            <?php //$table = [];
+            $table = getExcelData($inputTmpFileName);
+            //pr($table);
+            foreach ($table as $row0) {
+                $arr = array_values($row0);
+                printArrayAsTable($arr);
             }
             ?>
         </div>
 
         <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-            <h3>Notice the gap between the content and tab after applying a background color</h3>
+            <h2>Содержимое Базы Данных</h2>
+            <?php printArrayAsTable($dbArray);?>
         </div>
 
+
         <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
-            <h3>add clearfix to tab-content (see the css)</h3>
+            <h2>Товары, которых нет в Базе Данных</h2>
+            <?php
+
+            //printArrayAsTable($dbArray);?>
         </div>
     </div>
 
