@@ -4,11 +4,13 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 require_once 'vendor/autoload.php';
-//require_once 'connection.php';
 
-//$connection = new Connection();
-$inputFileName = $_FILES['uploadfile']["tmp_name"];
+$inputTmpFileName = $_FILES['uploadfile']["tmp_name"];
+echo 'TMP-FILE-NAME: ' . $inputTmpFileName . '<br>';
+$inputFileName = $_FILES['uploadfile']["name"];
 echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
+
+
 
 $excelArray = [];
 
@@ -51,9 +53,10 @@ function getExcelData($inputFileName)
 
         //преобразуем в array
         $worksheetArray = $worksheet->toArray();
-
         $worksheetArray = process($worksheetArray);
+        $worksheetArrayPrint=[];
         $worksheetArray = dellCategoryRow($worksheetArray);
+        $worksheetArrayPrint = $worksheetArray;
 
         $alias = array(
             "Category" => "CategoryAliasValue",
@@ -101,23 +104,29 @@ function getExcelData($inputFileName)
 
         // pr($worksheetArray);
         //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
-        //printArrayAsTable($worksheetArray);//печатаем таблицу
 
+        //printArrayAsTable($worksheetArrayPrint);//печатаем таблицу
+
+        $printAllExcelSheet[$loadedSheetName] = $worksheetArray;
         $allExcelSheet[$loadedSheetName] = $worksheetArray;
 
     }
     //pr($allExcelSheet);
+    //printArrayAsTable($allExcelSheet);
     return $allExcelSheet;
 
 }
 
-$excelArray = getExcelData($inputFileName);
+$excelArray = getExcelData($inputTmpFileName);
 
 //pr($excelArray);
 
-$query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+//$query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
 $query = "SELECT `barcodes` FROM ms_products";
 $dbArray = dbQueryArray($query);
+//запускаем сравнение базы и Excel
+$tmp = compareExistance($dbArray, $excelArray);
+//pr($tmp);
 
 function compareExistance($dbArray, $excelArray)
 {
@@ -126,33 +135,36 @@ function compareExistance($dbArray, $excelArray)
     //получаем ключи из Базы
     $dbBarcodes = array_column($dbArray, 'barcodes');
     //pr($dbBarcodes);
+    //pr($excelArray);
     //получаем ключи из excel
+
     foreach ($excelArray as $row) {
+
         $excelBarcodes[] = array_column($row, 'CodeAliasValue');
-        // pr($excelBarcodes);
     }
-    //объединяем все Barcodes из excel и удаляем дубли
-    foreach ($excelBarcodes as $value) {
-        $diffBarcodes = array_merge($diffBarcodes, $value);
+    // pr($excelBarcodes);
+
+    //trim excelBarcodes
+    foreach ($excelBarcodes as $row) {
+        foreach ($row as $value) {
+
+            $tmpArray[] = trim($value);
+        }
     }
-    $diffBarcodes = array_unique($diffBarcodes);
-    echo 'excelBarcodes: ';
-    pr($diffBarcodes);
+    $excelBarcodes = $tmpArray;
 
     //сравниваем excel и базу
-    $diffBarcodes1 = array_diff($diffBarcodes, $dbBarcodes);
-    echo "Новые товары не представленные в Базе данных: ";
-    pr($diffBarcodes1);
+    $diffBarcodes1 = array_diff($excelBarcodes, $dbBarcodes);
+    //echo "Новые товары не представленные в Базе данных: ";
+    //pr($diffBarcodes1);
 
-    $sameBarcodes = array_uintersect($dbBarcodes, $diffBarcodes, 'strcasecmp');
-    echo "Товары представленные в Базе данных: ";
-    pr($sameBarcodes);
+    $sameBarcodes = array_uintersect($dbBarcodes, $excelBarcodes, 'strcasecmp');
+    //echo "Товары представленные в Базе данных: ";
+    //pr($sameBarcodes);
 
     return $diffBarcodes;
 }
 
-$tmp = compareExistance($dbArray, $excelArray);
-//pr($tmp);
 
 function printArrayAsTable($arr)
 {
@@ -343,12 +355,11 @@ function setCollumnAsKey($inputArray)
         }
         //pr($tmp);
         //добавляем имена колонок в ключи
-//TODO - ВЫСКАКИВАЕТ ОШИБКА ПО array_combine на файле b2eb7fb725bfa61e (1)
-        if (!empty($tmp) || !empty($row)) {
-            //echo "Не пустой";
+        if (!empty($tmp) && !empty($row)) {
             $tmpArray2 = array_combine($tmp, $row);
         }
-        $tmpArray[$tmpArray2['CodeAliasValue']] = $tmpArray2;
+        $tmpArray[trimall($tmpArray2['CodeAliasValue'])] = $tmpArray2;
+        //pr($tmpArray);
     }
     $inputArray = $tmpArray;
     return $inputArray;
@@ -408,12 +419,58 @@ function dbQueryArray($query = '')
     <title></title>
 </head>
 <body>
-<h1></h1>
+
+<hr>
+<div class="container"><h1>Таблица данных из Excel файла <?php echo $inputFileName; ?></h1></div>
+
+<div id="exTab2" class="container">
+
+
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
+               aria-selected="true">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
+               aria-selected="false">Profile</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact"
+               aria-selected="false">Contact</a>
+        </li>
+    </ul>
+
+
+    <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
+            <h3>Standard tab panel created on bootstrap using nav-tabs</h3>
+            <?php $table = getExcelData($inputTmpFileName);
+            foreach ($table as $row){
+                printArrayAsTable($row);
+            }
+            ?>
+        </div>
+
+        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+            <h3>Notice the gap between the content and tab after applying a background color</h3>
+        </div>
+
+        <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+            <h3>add clearfix to tab-content (see the css)</h3>
+        </div>
+    </div>
+
+
+</div>
+
+<hr>
+
 
 <?php //printArrayAsTable($worksheetArray); ?>
 
 <? //sendMessage($message);?>
-<!-- Optional JavaScript -->
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -424,6 +481,8 @@ function dbQueryArray($query = '')
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
         integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
         crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
 </body>
 </html>
 
