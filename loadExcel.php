@@ -6,9 +6,9 @@ use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 require_once 'vendor/autoload.php';
 
 $inputTmpFileName = $_FILES['uploadfile']["tmp_name"];
-echo 'TMP-FILE-NAME: ' . $inputTmpFileName . '<br>';
+//echo 'TMP-FILE-NAME: ' . $inputTmpFileName . '<br>';
 $inputFileName = $_FILES['uploadfile']["name"];
-echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
+//echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
 
 
 $excelArray = [];
@@ -26,7 +26,7 @@ function getExcelData($inputFileName)
     }*/
     foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
 
-        $worksheet = $spreadsheet->getSheet($sheetIndex);
+        //$worksheet = $spreadsheet->getSheet($sheetIndex);
         $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
 
         /*echo "========================++++++++++++++++++++++++========================================" . '<br/>'
@@ -71,6 +71,10 @@ function getExcelData($inputFileName)
             "COLORS" => "ColorAliasValue",
             "Color" => "ColorAliasValue",
             "colors" => "ColorAliasValue",
+
+            "IMAGE" => "ImageAliasValue",
+
+            "PACKAGE" => "PackageAliasValue",
 
             "Description" => "DescriptionAliasValue",
             "DESCRIPTION" => "DescriptionAliasValue",
@@ -122,27 +126,21 @@ $excelArray = getExcelData($inputTmpFileName);
 
 $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
 $query1 = "SELECT `barcodes` FROM ms_products";
-$dbArray = dbQueryArray($query1);
+$dbArray = dbQueryArray($query);
 
 //запускаем сравнение базы и Excel
-$tmp = compareExistance($dbArray, $excelArray);
+$diffBarcodes = compareExistance($dbArray, $excelArray);
 //pr($excelArray);
 
 function compareExistance($dbArray, $excelArray)
 {
-    $diffBarcodes = [];
-    //pr($excelArray);
     //получаем ключи из Базы
     $dbBarcodes = array_column($dbArray, 'barcodes');
-    //pr($dbBarcodes);
-    //pr($excelArray);
+
     //получаем ключи из excel
-
     foreach ($excelArray as $row) {
-
         $excelBarcodes[] = array_column($row, 'CodeAliasValue');
     }
-    // pr($excelBarcodes);
 
     //trim excelBarcodes
     foreach ($excelBarcodes as $row) {
@@ -154,13 +152,13 @@ function compareExistance($dbArray, $excelArray)
 
     //сравниваем excel и базу
     $diffBarcodes = array_diff($excelBarcodes, $dbBarcodes);
-    $diffBarcodes = array_unique ($diffBarcodes);
-    pr($diffBarcodes);
+    $diffBarcodes = array_unique($diffBarcodes);
+    //unset($diffBarcodes[0]);
+
+    //echo "Нет в Базе данных этих товаров: ";
+    //pr($diffBarcodes);
     $missingProducts = [];
-    $i=1;
-
-
-
+    $i = 1;
 
     $sameBarcodes = array_uintersect($dbBarcodes, $excelBarcodes, 'strcasecmp');
     //echo "Товары представленные в Базе данных: ";
@@ -169,6 +167,14 @@ function compareExistance($dbArray, $excelArray)
     return $diffBarcodes;
 }
 
+function printTableDifference($diffBarcodes, $excelArray)
+{
+    $result = [];
+    foreach ($excelArray as $row) {
+        $result[] = (array_intersect_key($row, array_flip($diffBarcodes)));
+    }
+    return $result;
+}
 
 function printArrayAsTable($arr)
 {
@@ -199,6 +205,7 @@ function printArrayAsTable($arr)
     echo '</tbody>';
     echo '</table>';
 }
+
 
 function process($data)
 {
@@ -239,6 +246,7 @@ function isEmptyRow($row)
 //Отсекаем пустые колонки
 function removeEmptyColumns($data)
 {
+    //pr($data);
     $columns = [];
     if (empty($data[0])) {
         return [];
@@ -251,6 +259,7 @@ function removeEmptyColumns($data)
 
     foreach ($data as $row) {
         foreach ($row as $k => $item) {
+
             if ($columns[$k]) {
                 continue;
             }
@@ -451,25 +460,52 @@ function dbQueryArray($query = '')
             <h2>Таблица данных из Excel файла <?php echo $inputFileName; ?></h2>
             <?php //$table = [];
             $table = getExcelData($inputTmpFileName);
-            //pr($table);
-            foreach ($table as $row0) {
-                $arr = array_values($row0);
-                printArrayAsTable($arr);
+            $result = [];
+            foreach ($table as $sheet => $data) {
+                foreach ($data as $key => $item) {
+                    if ($key == 'CodeAliasValue') {
+                        continue;
+                    }
+                    array_unshift($item, $item['sheet'] = $sheet);
+                    $result[] = $item;
+                }
             }
+            printArrayAsTable($result);
+            //pr($result);
+            //die('asd');
+
+            /*$arr = [];
+            foreach ($table as $row0) {
+                pr($row0);
+                echo '!!!!!!!';
+                $arr = array_values($row0);
+                //pr($arr);
+            }
+            die('ишпф');*/
+            //pr($arr);
+            //printArrayAsTable($arr);
             ?>
         </div>
 
         <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
             <h2>Содержимое Базы Данных</h2>
-            <?php printArrayAsTable($dbArray);?>
+            <?php printArrayAsTable($dbArray); ?>
         </div>
 
 
         <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
-
-            //printArrayAsTable($dbArray);?>
+            $table = printTableDifference($diffBarcodes, $excelArray);
+            $arr = [];
+            foreach ($table as $row) {
+                foreach ($row as $v) {
+                    $displayArr[] = array_values($v);
+                    $arr = $displayArr;
+                }
+            }
+            printArrayAsTable($arr);
+            ?>
         </div>
     </div>
 
