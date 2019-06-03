@@ -110,7 +110,7 @@ function getExcelData($inputFileName)
 
         //printArrayAsTable($worksheetArrayPrint);//печатаем таблицу
 
-        $printAllExcelSheet[$loadedSheetName] = $worksheetArray;
+        //$printAllExcelSheet[$loadedSheetName] = $worksheetArray;
         $allExcelSheet[$loadedSheetName] = $worksheetArray;
 
     }
@@ -120,9 +120,9 @@ function getExcelData($inputFileName)
 
 }
 
+//помещаем данные в Excel файл
 $excelArray = getExcelData($inputTmpFileName);
 
-//pr($excelArray);
 
 $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
 $query1 = "SELECT `barcodes` FROM ms_products";
@@ -130,7 +130,11 @@ $dbArray = dbQueryArray($query);
 
 //запускаем сравнение базы и Excel
 $diffBarcodes = compareExistance($dbArray, $excelArray);
-//pr($excelArray);
+
+function sendToDB($query = '')
+{
+    $result = dbQuery($query);
+}
 
 function compareExistance($dbArray, $excelArray)
 {
@@ -286,6 +290,19 @@ function removeEmptyColumns($data)
     }
 
     return $result;
+}
+
+function arrayColRemove($array, $col_index)
+{
+    if (is_array($array) && count($array)) {
+        foreach ($array as $row_index => $row) {
+            if (array_key_exists($col_index, $row)) {
+                unset($array[$row_index][$col_index]);
+                $array[$row_index] = array_values($array[$row_index]);
+            }
+        }
+    }
+    return $array;
 }
 
 function isCategoryRow($row)
@@ -458,7 +475,7 @@ function dbQueryArray($query = '')
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
             <h2>Таблица данных из Excel файла <?php echo $inputFileName; ?></h2>
-            <?php //$table = [];
+            <?php
             $table = getExcelData($inputTmpFileName);
             $result = [];
             foreach ($table as $sheet => $data) {
@@ -471,19 +488,6 @@ function dbQueryArray($query = '')
                 }
             }
             printArrayAsTable($result);
-            //pr($result);
-            //die('asd');
-
-            /*$arr = [];
-            foreach ($table as $row0) {
-                pr($row0);
-                echo '!!!!!!!';
-                $arr = array_values($row0);
-                //pr($arr);
-            }
-            die('ишпф');*/
-            //pr($arr);
-            //printArrayAsTable($arr);
             ?>
         </div>
 
@@ -504,8 +508,40 @@ function dbQueryArray($query = '')
                     $arr = $displayArr;
                 }
             }
-            printArrayAsTable($arr);
+            //printArrayAsTable($arr);
             ?>
+            <table cellpadding="5" cellspacing="0" border="1">
+                <thead>
+                <!--<tr>
+                    <th><?php /*echo implode('</th><th>', array_keys(current($arr))); */ ?></th>
+                </tr>-->
+                </thead>
+                <tbody>
+                <?php foreach ($arr
+
+                as $row):
+                array_map('htmlentities', $row);
+                //pr($row);
+                ?>
+                <?php if ($row[0] == "CategoryAliasValue"): ?>
+                <thead>
+                <td></td>
+                <td><?php echo implode('</td><td>', $row); ?></td>
+                </thead>
+                <? else: ?>
+                    <tr>
+                        <td>
+                            <form action="loadExcel.php" method="post">
+                                <input type="submit" value="Добавить" name="submit">
+                            </form>
+                        </td>
+                        <td><?php echo implode('</td><td>', $row); ?></td>
+                        <?php //pr($row); ?>
+                    </tr>
+                <? endif; ?>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
         </div>
     </div>
 
