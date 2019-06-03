@@ -131,9 +131,11 @@ $dbArray = dbQueryArray($query);
 //запускаем сравнение базы и Excel
 $diffBarcodes = compareExistance($dbArray, $excelArray);
 
-function sendToDB($query = '')
+function sendToDB($query = '', $row)
 {
     $result = dbQuery($query);
+    $query = "INSERT INTO ms_products (id, vwap, last, bid, ask, volume, markchg, markpct, shares, marketcap, ttmsqz) 
+    VALUES ('null', '$row[1]', '$row[2]', '$row[3]', '$row[4]', '$row[5]', '$row[6]', '$row[7]', '$row[8]', '$row[9]', '$row[10]', '$row[11]')";
 }
 
 function compareExistance($dbArray, $excelArray)
@@ -177,6 +179,7 @@ function printTableDifference($diffBarcodes, $excelArray)
     foreach ($excelArray as $row) {
         $result[] = (array_intersect_key($row, array_flip($diffBarcodes)));
     }
+    //pr($result);
     return $result;
 }
 
@@ -447,6 +450,18 @@ function dbQueryArray($query = '')
           integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
     <title></title>
+
+    <script>
+        $(document).ready(function () {
+            $("button").click(function () {
+                $.ajax({
+                    url: "demo_ajax_script.js", success: function (result) {
+                        $("#div1").html(result);
+                    }
+                });
+            });
+        });
+    </script>
 </head>
 <body>
 
@@ -454,8 +469,6 @@ function dbQueryArray($query = '')
 <div class="container"><h1>Сводные таблицы</h1></div>
 
 <div id="exTab2" class="container">
-
-
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
@@ -470,7 +483,6 @@ function dbQueryArray($query = '')
                aria-selected="false">Новые товары</a>
         </li>
     </ul>
-
 
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -501,14 +513,11 @@ function dbQueryArray($query = '')
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
             $table = printTableDifference($diffBarcodes, $excelArray);
-            $arr = [];
-            foreach ($table as $row) {
-                foreach ($row as $v) {
-                    $displayArr[] = array_values($v);
-                    $arr = $displayArr;
-                }
+            //pr($table);
+            $diffArray = [];
+            foreach ($table as $row => $value) {
+                $diffArray = $value;
             }
-            //printArrayAsTable($arr);
             ?>
             <table cellpadding="5" cellspacing="0" border="1">
                 <thead>
@@ -517,13 +526,13 @@ function dbQueryArray($query = '')
                 </tr>-->
                 </thead>
                 <tbody>
-                <?php foreach ($arr
+                <?php foreach ($diffArray
 
                 as $row):
                 array_map('htmlentities', $row);
                 //pr($row);
                 ?>
-                <?php if ($row[0] == "CategoryAliasValue"): ?>
+                <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"): ?>
                 <thead>
                 <td></td>
                 <td><?php echo implode('</td><td>', $row); ?></td>
@@ -531,11 +540,10 @@ function dbQueryArray($query = '')
                 <? else: ?>
                     <tr>
                         <td>
-                            <form action="loadExcel.php" method="post">
-                                <input type="submit" value="Добавить" name="submit">
-                            </form>
+                            <button>Добавить</button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
+
                         <?php //pr($row); ?>
                     </tr>
                 <? endif; ?>
@@ -550,10 +558,6 @@ function dbQueryArray($query = '')
 
 <hr>
 
-
-<?php //printArrayAsTable($worksheetArray); ?>
-
-<? //sendMessage($message);?>
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -566,6 +570,8 @@ function dbQueryArray($query = '')
         crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
+
 </body>
 </html>
 
