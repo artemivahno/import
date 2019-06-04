@@ -73,8 +73,10 @@ function getExcelData($inputFileName)
             "colors" => "ColorAliasValue",
 
             "IMAGE" => "ImageAliasValue",
+            "Image" => "ImageAliasValue",
 
             "PACKAGE" => "PackageAliasValue",
+            "Package" => "PackageAliasValue",
 
             "Description" => "DescriptionAliasValue",
             "DESCRIPTION" => "DescriptionAliasValue",
@@ -434,6 +436,11 @@ function dbQueryArray($query = '')
     return $data;
 }
 
+function saveArray($tableArray){
+
+
+}
+
 //=====DATABASE ==================================
 
 
@@ -449,18 +456,31 @@ function dbQueryArray($query = '')
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
           integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+            crossorigin="anonymous"></script>
     <title></title>
+
 
     <script>
         $(document).ready(function () {
+
             $("button").click(function () {
+                var key1=$(this).data('key1')
+                var key2=$(this).data('key2')
+                //alert(key1, key2)
                 $.ajax({
-                    url: "demo_ajax_script.js", success: function (result) {
-                        $("#div1").html(result);
+                    url: "saveArrDB.php",
+                    type: "POST",
+                    data: {key1:key1,key2:key2},
+                    success: function (result) {
+                        alert('Товар загружен в базу данных');
                     }
                 });
+                $(this).remove();
             });
         });
+
     </script>
 </head>
 <body>
@@ -469,6 +489,8 @@ function dbQueryArray($query = '')
 <div class="container"><h1>Сводные таблицы</h1></div>
 
 <div id="exTab2" class="container">
+
+
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
@@ -483,6 +505,7 @@ function dbQueryArray($query = '')
                aria-selected="false">Новые товары</a>
         </li>
     </ul>
+
 
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -514,25 +537,33 @@ function dbQueryArray($query = '')
             <?php
             $table = printTableDifference($diffBarcodes, $excelArray);
             //pr($table);
-            $diffArray = [];
-            foreach ($table as $row => $value) {
-                $diffArray = $value;
+            $arr = [];
+            foreach ($table as $row) {
+                foreach ($row as $v) {
+                    $displayArr[] = $v;
+                    //pr($displayArr);
+                    $arr = $displayArr;
+                }
             }
+            //printArrayAsTable($arr);
             ?>
             <table cellpadding="5" cellspacing="0" border="1">
                 <thead>
-                <!--<tr>
-                    <th><?php /*echo implode('</th><th>', array_keys(current($arr))); */ ?></th>
-                </tr>-->
+                <tr>
+                    <th>
+                        <button>Добавить все товары</button>
+                    </th>
+                    <th><?php echo implode('</th><th>', array_keys(current($arr))); ?></th>
+                </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($diffArray
-
+                <?php foreach ($arr
                 as $row):
                 array_map('htmlentities', $row);
                 //pr($row);
                 ?>
-                <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"): ?>
+                <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"):
+                continue; ?>
                 <thead>
                 <td></td>
                 <td><?php echo implode('</td><td>', $row); ?></td>
@@ -540,7 +571,7 @@ function dbQueryArray($query = '')
                 <? else: ?>
                     <tr>
                         <td>
-                            <button>Добавить</button>
+                            <button data-key1="<?php echo $row['ProductAliasValue'] ?>" data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить</button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
 
@@ -558,10 +589,12 @@ function dbQueryArray($query = '')
 
 <hr>
 
+
+<?php //printArrayAsTable($worksheetArray); ?>
+
+<? //sendMessage($message);?>
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
         integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
         crossorigin="anonymous"></script>
