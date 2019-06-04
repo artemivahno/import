@@ -465,7 +465,15 @@ function saveArray($tableArray){
     <script>
         $(document).ready(function () {
 
-            $("button").click(function () {
+            $(".all").click(function () {
+
+                $(".product").click();
+
+                alert("Все товары загружены в базу данных")
+
+            })
+
+            $(".product").click(function () {
                 var key1=$(this).data('key1')
                 var key2=$(this).data('key2')
                 //alert(key1, key2)
@@ -474,11 +482,12 @@ function saveArray($tableArray){
                     type: "POST",
                     data: {key1:key1,key2:key2},
                     success: function (result) {
-                        alert('Товар загружен в базу данных');
+                        //alert('Товар загружен в базу данных');
                     }
                 });
                 $(this).remove();
             });
+
         });
 
     </script>
@@ -551,7 +560,7 @@ function saveArray($tableArray){
                 <thead>
                 <tr>
                     <th>
-                        <button>Добавить все товары</button>
+                        <button class="all">Добавить все товары</button>
                     </th>
                     <th><?php echo implode('</th><th>', array_keys(current($arr))); ?></th>
                 </tr>
@@ -571,7 +580,7 @@ function saveArray($tableArray){
                 <? else: ?>
                     <tr>
                         <td>
-                            <button data-key1="<?php echo $row['ProductAliasValue'] ?>" data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить</button>
+                            <button class="product" data-key1="<?php echo $row['ProductAliasValue'] ?>" data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить</button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
 
