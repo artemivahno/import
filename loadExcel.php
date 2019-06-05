@@ -436,7 +436,8 @@ function dbQueryArray($query = '')
     return $data;
 }
 
-function saveArray($tableArray){
+function saveArray($tableArray)
+{
 
 
 }
@@ -465,28 +466,46 @@ function saveArray($tableArray){
     <script>
         $(document).ready(function () {
 
-            $(".all").click(function () {
-
-                $(".product").click();
-
-                alert("Все товары загружены в базу данных")
-
-            })
-
             $(".product").click(function () {
-                var key1=$(this).data('key1')
-                var key2=$(this).data('key2')
+                var key1 = $(this).data('key1');
+                var key2 = $(this).data('key2');
                 //alert(key1, key2)
                 $.ajax({
                     url: "saveArrDB.php",
                     type: "POST",
-                    data: {key1:key1,key2:key2},
+                    data: {key1: key1, key2: key2},
                     success: function (result) {
                         //alert('Товар загружен в базу данных');
                     }
                 });
                 $(this).remove();
             });
+
+            $(".all").click(function () {
+                work();
+            });
+
+            function work() {
+                alert("Start");
+                setInterval(5000, function ($('.product').first().click();
+
+                /*do {
+                    $('.product').first().click();
+                } while ('.product'[0]);
+*/
+
+                /*) {
+                    if ('.product'[0]) {
+                        alert("Есть товары");
+                        work();
+                    } else {
+                        alert("Все товары загружены в базу данных");
+                        //alert("ЗАКОНЧИЛИСЬ товары");
+                        stop()
+                    }
+                })*/
+
+            }
 
         });
 
@@ -567,6 +586,7 @@ function saveArray($tableArray){
                 </thead>
                 <tbody>
                 <?php foreach ($arr
+
                 as $row):
                 array_map('htmlentities', $row);
                 //pr($row);
@@ -580,7 +600,9 @@ function saveArray($tableArray){
                 <? else: ?>
                     <tr>
                         <td>
-                            <button class="product" data-key1="<?php echo $row['ProductAliasValue'] ?>" data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить</button>
+                            <button class="product" data-key1="<?php echo $row['ProductAliasValue'] ?>"
+                                    data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить
+                            </button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
 
