@@ -465,7 +465,6 @@ function saveArray($tableArray)
 
     <script>
         $(document).ready(function () {
-
             $(".product").click(function () {
                 var key1 = $(this).data('key1');
                 var key2 = $(this).data('key2');
@@ -475,7 +474,7 @@ function saveArray($tableArray)
                     type: "POST",
                     data: {key1: key1, key2: key2},
                     success: function (result) {
-                        //alert('Товар загружен в базу данных');
+                        alert('Товар загружен в базу данных');
                     }
                 });
                 $(this).remove();
@@ -484,41 +483,42 @@ function saveArray($tableArray)
             $(".all").click(function () {
                 work();
             });
-
             function work() {
-                alert("Start");
-                setInterval(5000, function ($('.product').first().click();
-
-                /*do {
-                    $('.product').first().click();
-                } while ('.product'[0]);
-*/
-
-                /*) {
-                    if ('.product'[0]) {
-                        alert("Есть товары");
-                        work();
-                    } else {
-                        alert("Все товары загружены в базу данных");
-                        //alert("ЗАКОНЧИЛИСЬ товары");
-                        stop()
-                    }
-                })*/
-
+                if ($('.product')[0]) {
+                    alert("Добавить все товары. Для отмены нажми F5");
+                    setInterval(function () {
+                        $('.product').first().click()
+                    }, 500);
+                } else {
+                    alert("Нет товаров для загрузки");
+                }
             }
 
-        });
+            function alert() {
+                var alertSuccess = $('.alert-success');
+
+                alertSuccess.css('display', 'block');
+                setTimeout(function () {
+                    alertSuccess.hide();
+                }, 500);
+
+            }
+        })
+
 
     </script>
 </head>
 <body>
 
 <hr>
-<div class="container"><h1>Сводные таблицы</h1></div>
+<div class="container"><h1>Сводные таблицы</h1>
+    <span>
+    <div class="alert alert-success" style="display: none;">Товар загружен в базу данных</div>
+    </span>
+
+</div>
 
 <div id="exTab2" class="container">
-
-
     <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item">
             <a class="nav-link active" id="home-tab" data-toggle="tab" href="#home" role="tab" aria-controls="home"
@@ -529,11 +529,11 @@ function saveArray($tableArray)
                aria-selected="false">Из Базы Данных</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab" aria-controls="contact"
+            <a class="nav-link" id="productNew-tab" data-toggle="tab" href="#productNew" role="tab"
+               aria-controls="productNew"
                aria-selected="false">Новые товары</a>
         </li>
     </ul>
-
 
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
@@ -559,23 +559,20 @@ function saveArray($tableArray)
             <?php printArrayAsTable($dbArray); ?>
         </div>
 
-
-        <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+        <div class="tab-pane fade" id="productNew" role="tabpanel" aria-labelledby="productNew-tab">
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
             $table = printTableDifference($diffBarcodes, $excelArray);
-            //pr($table);
             $arr = [];
             foreach ($table as $row) {
                 foreach ($row as $v) {
                     $displayArr[] = $v;
-                    //pr($displayArr);
                     $arr = $displayArr;
                 }
             }
-            //printArrayAsTable($arr);
             ?>
             <table cellpadding="5" cellspacing="0" border="1">
+
                 <thead>
                 <tr>
                     <th>
@@ -589,7 +586,6 @@ function saveArray($tableArray)
 
                 as $row):
                 array_map('htmlentities', $row);
-                //pr($row);
                 ?>
                 <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"):
                 continue; ?>
@@ -605,8 +601,6 @@ function saveArray($tableArray)
                             </button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
-
-                        <?php //pr($row); ?>
                     </tr>
                 <? endif; ?>
                 <?php endforeach; ?>
@@ -614,16 +608,8 @@ function saveArray($tableArray)
             </table>
         </div>
     </div>
-
-
 </div>
-
 <hr>
-
-
-<?php //printArrayAsTable($worksheetArray); ?>
-
-<? //sendMessage($message);?>
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
