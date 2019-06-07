@@ -4,6 +4,8 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 require_once 'vendor/autoload.php';
+require_once 'config.php';
+require_once 'core.php';
 
 $inputTmpFileName = $_FILES['uploadfile']["tmp_name"];
 //echo 'TMP-FILE-NAME: ' . $inputTmpFileName . '<br>';
@@ -133,13 +135,6 @@ $dbArray = dbQueryArray($query);
 //запускаем сравнение базы и Excel
 $diffBarcodes = compareExistance($dbArray, $excelArray);
 
-function sendToDB($query = '', $row)
-{
-    $result = dbQuery($query);
-    $query = "INSERT INTO ms_products (id, vwap, last, bid, ask, volume, markchg, markpct, shares, marketcap, ttmsqz) 
-    VALUES ('null', '$row[1]', '$row[2]', '$row[3]', '$row[4]', '$row[5]', '$row[6]', '$row[7]', '$row[8]', '$row[9]', '$row[10]', '$row[11]')";
-}
-
 function compareExistance($dbArray, $excelArray)
 {
     //получаем ключи из Базы
@@ -183,36 +178,6 @@ function printTableDifference($diffBarcodes, $excelArray)
     }
     //pr($result);
     return $result;
-}
-
-function printArrayAsTable($arr)
-{
-    if (empty($arr[0])) {
-        pr('Массив пустой');
-        return true;
-    }
-    $keys = array_keys($arr[0]);
-    echo '<table class="table table-bordered table-hover table-responsive sortable-theme-bootstrap" data-sortable="" data-sortable-initialized="true">';
-    echo '<thead>';
-    echo '<tr>';
-    echo '<th>#</th>';
-    foreach ($keys as $key) {
-        echo '<th>' . $key . '</th>';
-    }
-    echo '</tr>';
-    echo '</thead>';
-    echo '<tbody>';
-    $i = 1;
-    foreach ($arr as $row) {
-        echo '<tr>';
-        echo '<td>' . $i++ . '</td>';
-        foreach ($row as $column) {
-            echo '<td>' . $column . '</td>';
-        }
-        echo '</tr>';
-    }
-    echo '</tbody>';
-    echo '</table>';
 }
 
 
@@ -341,14 +306,6 @@ function dellCategoryRow($data)
     return $result;
 }
 
-
-function pr($v)
-{
-    echo '<pre>';
-    print_r($v);
-    echo '</pre>';
-}
-
 function trimall($string)
 {
     return preg_replace("/(^\s*)|(\s*$)/", "",
@@ -402,20 +359,15 @@ function setCollumnAsKey($inputArray)
 
 //=====DATABASE ==================================
 
-function dbQuery($query = '')
+/*function dbQuery($query = '')
 {
-    $dbHost = "localhost";
-    $dbUsername = "root";
-    $dbPassword = "";
-    $dbName = "products";
 
-
-    $link = mysqli_connect("$dbHost", "$dbUsername",
-        "$dbPassword", "$dbName")
+    $link = mysqli_connect(DB_HOST, DB_USER,
+        DB_PASS, DB_BASE)
     or die("Couldn't connect to the MySQL server\n");
     mysqli_query($link, 'SET NAMES utf8')
     or die("Invalid set utf8 " . mysqli_error($link) . "\n");
-    $db = mysqli_select_db($link, $dbName)
+    $db = mysqli_select_db($link, DB_BASE)
     or die("db can't be selected\n");
 
     $result = mysqli_query($link, $query)
@@ -434,7 +386,7 @@ function dbQueryArray($query = '')
     mysqli_free_result($result);
 
     return $data;
-}
+}*/
 
 function saveArray($tableArray)
 {
@@ -494,7 +446,7 @@ function saveArray($tableArray)
                 }
             }
 
-            function alert() {
+            /*function alert() {
                 var alertSuccess = $('.alert-success');
 
                 alertSuccess.css('display', 'block');
@@ -502,7 +454,7 @@ function saveArray($tableArray)
                     alertSuccess.hide();
                 }, 500);
 
-            }
+            }*/
         })
 
 
@@ -513,10 +465,22 @@ function saveArray($tableArray)
 <hr>
 <div class="container"><h1>Сводные таблицы</h1>
     <span>
+        <form method='post' enctype="multipart/form-data" action="processMSklad.php">
+            <div class="form-group">
+                <br>
+                <button type="submit" class="btn btn-primary pull-right"> Загрузить из М.Склад в Базу</button>
+            </div>
+        </form>
+
+    </span>
+
+    <span>
     <div class="alert alert-success" style="display: none;">Товар загружен в базу данных</div>
     </span>
 
 </div>
+<br>
+
 
 <div id="exTab2" class="container">
     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -560,9 +524,16 @@ function saveArray($tableArray)
         </div>
 
         <div class="tab-pane fade" id="productNew" role="tabpanel" aria-labelledby="productNew-tab">
+
+
+
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
             $table = printTableDifference($diffBarcodes, $excelArray);
+            serialize($table);
+
+            //pr($table);
+
             $arr = [];
             foreach ($table as $row) {
                 foreach ($row as $v) {
@@ -571,6 +542,8 @@ function saveArray($tableArray)
                 }
             }
             ?>
+            <input type='hidden' name='tableDifferences' value='<?php serialize($table); ?>' />
+
             <table cellpadding="5" cellspacing="0" border="1">
 
                 <thead>
@@ -582,9 +555,7 @@ function saveArray($tableArray)
                 </tr>
                 </thead>
                 <tbody>
-                <?php foreach ($arr
-
-                as $row):
+                <?php foreach ($arr as $row):
                 array_map('htmlentities', $row);
                 ?>
                 <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"):
