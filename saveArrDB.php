@@ -60,13 +60,6 @@ function putJSONarray($type, $data, $method='PUT') {
 }
 
 
-
-
-
-
-
-
-
 //Добавляет товар в базу с указанными полями
 /*$item = [];
 $item['name'] = $key1;

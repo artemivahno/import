@@ -107,7 +107,7 @@
         }
         $body = getContent($url, MS_LOGIN, MS_PASSWORD);
         //pr($url);
-        //pr($body);
+        pr($body);
 
 
         // Проверка качества JSON
