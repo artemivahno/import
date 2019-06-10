@@ -107,11 +107,12 @@
         }
         $body = getContent($url, MS_LOGIN, MS_PASSWORD);
         //pr($url);
-        pr($body);
+        //pr($body);
 
 
         // Проверка качества JSON
         $data = json_decode($body, true);
+        //pr($data);
         $error = json_last_error();
         if ($error !== JSON_ERROR_NONE) {
             //echo "<p>slug: $slug</p>";
@@ -438,7 +439,7 @@
             $arr = json_decode($data, true);
         }
 
-        return CKayaMoyskladMetadataStates::saveItems($arr);
+        return CKayaMoyskladProducts::saveItems($arr);
     }
 
 
@@ -464,7 +465,7 @@
         $options['filter'] = !empty($filter) ? $filter.';' : '';
         $options['filter'] .= urlencode("archived=false");
         list($items, $size)	= download($type, $options, $stop);
-        $r1 = CKayaMoyskladProjects::saveItems($items, $size);
+        $r1 = CKayaMoyskladProducts::saveItems($items, $size);
 
         // Архивные проекты
         $options['filter'] = !empty($filter) ? $filter.';' : '';

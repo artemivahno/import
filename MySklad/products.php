@@ -68,15 +68,15 @@ class CKayaMoyskladProducts extends CKayaMoyskladSave {
         dbQuery($sql);
 
         // Сохраняем атрибуты attribute
-        if (!empty($item['attributes'])) {
+        /*if (!empty($item['attributes'])) {
         	self::saveProductAttributes($item['attributes'], $uuid);
-        }
+        }*/
         self::unsetKeyIfSet($item, 'attributes');
 
         // Сохраняем цены
-        if (!empty($item['salePrices'])) {
+        /*if (!empty($item['salePrices'])) {
             self::saveProductPrices($item['salePrices'], $uuid);
-        }
+        }*/
         //self::unsetKeyIfSet($item, 'salePrices');
 
 
