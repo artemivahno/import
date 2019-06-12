@@ -480,14 +480,16 @@ function dbQueryArray($query = '')
 
     <script>
         $(document).ready(function () {
+            //кнопка добавки одного товара
             $(".product").click(function () {
                 var key1 = $(this).data('key1');
                 var key2 = $(this).data('key2');
-                //alert(key1, key2)
+                //var key3 = $(this).data('key3');
+                //alert(parseFloat('key3'));
                 $.ajax({
                     url: "saveArrMS.php",
                     type: "POST",
-                    data: {key1: key1, key2: key2},
+                    data: {key1: key1, key2: key2/*, key3: key3*/},
                     success: function (result) {
                         alert('Товар загружен в Мой склад');
                     }
@@ -498,6 +500,7 @@ function dbQueryArray($query = '')
             $(".all").click(function () {
                 work();
             });
+            //кнопка добавки всех товаров
             function work() {
                 if ($('.product')[0]) {
                     alert("Добавить все товары в Мой Склад. Для отмены нажми F5");
@@ -508,7 +511,7 @@ function dbQueryArray($query = '')
                     alert("Нет товаров для загрузки");
                 }
             }
-
+                //альтернативный показ уведомлений
             function alert() {
                 var alertSuccess = $('.alert-success');
 
@@ -528,7 +531,7 @@ function dbQueryArray($query = '')
 <hr>
 <div class="container"><h1>Сводные таблицы</h1>
     <span>
-
+    <a href="/">Выбрать другой файл</a>
 
     </span>
 
@@ -626,8 +629,11 @@ function dbQueryArray($query = '')
                 <? else: ?>
                     <tr>
                         <td>
-                            <button class="product" data-key1="<?php echo $row['ProductAliasValue'] ?>"
-                                    data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить в Мой Склад
+                            <button class="product"
+                                    data-key1="<?php echo $row['ProductAliasValue'] ?>"
+                                    data-key2="<?php echo $row['CodeAliasValue'] ?>"
+                                    <!--data-key3="--><?php /*echo $row['Price(USD)Alias'] */?>"
+                            >Добавить в Мой Склад
                             </button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
