@@ -84,6 +84,7 @@ function getExcelData($inputFileName)
             "DESCRIPTION" => "DescriptionAliasValue",
 
             "Price (USD)" => "Price(USD)Alias",
+            "Wholesale Price(USD)" => "Price(USD)Alias",
             "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
             "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
             "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
@@ -127,15 +128,104 @@ function getExcelData($inputFileName)
 //помещаем данные в Excel файл
 $excelArray = getExcelData($inputTmpFileName);
 
+//pr($excelArray['Price(USD)Alias']);
+
 
 $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+$queryPrice =   "SELECT `uuid` ,`name`,`barcodes`,`value` 
+                FROM ms_products
+                LEFT JOIN ms_product_prices ON ms_products.uuid=ms_product_prices.productUuid
+                WHERE ms_product_prices.type='Оптовая цена'
+                ";
 $query1 = "SELECT `barcodes` FROM ms_products";
 $dbArray = dbQueryArray($query);
+$dbPrice = dbQueryArray($queryPrice);
+//pr($dbPrice );
 
 //запускаем сравнение базы и Excel
 $diffBarcodes = compareExistance($dbArray, $excelArray);
 
 function compareExistance($dbArray, $excelArray)
+{
+    //получаем ключи из Базы
+    $dbBarcodes = array_column($dbArray, 'barcodes');
+
+    //получаем ключи из excel
+    foreach ($excelArray as $row) {
+        $excelBarcodes[] = array_column($row, 'CodeAliasValue');
+    }
+    //trim excelBarcodes
+    foreach ($excelBarcodes as $row) {
+        foreach ($row as $value) {
+            $tmpArray[] = trim($value);
+        }
+    }
+    $excelBarcodes = $tmpArray;
+
+    //сравниваем excel и базу
+    $diffBarcodes = array_diff($excelBarcodes, $dbBarcodes);
+    $diffBarcodes = array_unique($diffBarcodes);
+
+    return $diffBarcodes;
+}
+
+function printTableDifference($diffBarcodes, $excelArray)
+{
+    $result = [];
+    foreach ($excelArray as $row) {
+        $result[] = (array_intersect_key($row, array_flip($diffBarcodes)));
+    }
+    //pr($result);
+    return $result;
+}
+
+
+$diffPrice = compareSame($dbArray, $excelArray);
+function printDiffPrice($diffPrice,$excelArray,$dbPrice)
+{
+    $usd = 2.08;
+    $result = [];
+    $tmpArr = [];
+    //находим товары имеющиеся в бд
+    //pr($dbPrice);
+
+    //получаем массив баркод-цена(из базы)
+    $dbArray=[];
+    foreach ($dbPrice as $row){
+        $dbArray[$row['barcodes']] = $row['value'];
+    }
+    //pr($dbArray);
+
+    foreach ($excelArray as $row) {
+        $tmpArr[] = (array_intersect_key($row, array_flip($diffPrice)));
+    }
+    //pr($tmpArr);
+
+    //очищаем все лишнее в строке Price(USD)Alias
+    foreach ($tmpArr as $row){
+      foreach ($row as $value){
+            //pr($value['CodeAliasValue']);
+          $value['CodeAliasValue'] = trim($value['CodeAliasValue']);
+            //убираем знак $ и оставляем только цифры в Price(USD)Alias
+          $value['Price(USD)Alias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
+            //если товар с таким кодом есть в базе данных вставить цену
+          if ($dbArray[$value['CodeAliasValue']]){
+
+              array_unshift($value, /*$value['PriceDataBase'] =*/
+                  round($dbArray[$value['CodeAliasValue']]/$usd,2));
+          }/*else {
+              array_unshift($value, $value['PriceDataBase'] = '');
+          }*/
+            $tmp[]=$value;
+          $result = $tmp;
+      }
+    }
+    //pr($result);
+    return $result;
+}
+$productDifference = printDiffPrice($diffPrice,$excelArray,$dbPrice);
+
+function compareSame($dbArray, $excelArray)
 {
     //получаем ключи из Базы
     $dbBarcodes = array_column($dbArray, 'barcodes');
@@ -153,31 +243,11 @@ function compareExistance($dbArray, $excelArray)
     }
     $excelBarcodes = $tmpArray;
 
-    //сравниваем excel и базу
-    $diffBarcodes = array_diff($excelBarcodes, $dbBarcodes);
-    $diffBarcodes = array_unique($diffBarcodes);
-    //unset($diffBarcodes[0]);
-
-    //echo "Нет в Базе данных этих товаров: ";
-    //pr($diffBarcodes);
-    $missingProducts = [];
-    $i = 1;
-
     $sameBarcodes = array_uintersect($dbBarcodes, $excelBarcodes, 'strcasecmp');
     //echo "Товары представленные в Базе данных: ";
     //pr($sameBarcodes);
 
-    return $diffBarcodes;
-}
-
-function printTableDifference($diffBarcodes, $excelArray)
-{
-    $result = [];
-    foreach ($excelArray as $row) {
-        $result[] = (array_intersect_key($row, array_flip($diffBarcodes)));
-    }
-    //pr($result);
-    return $result;
+    return $sameBarcodes;
 }
 
 
@@ -387,13 +457,6 @@ function dbQueryArray($query = '')
 
     return $data;
 }*/
-
-function saveArray($tableArray)
-{
-
-
-}
-
 //=====DATABASE ==================================
 
 
@@ -489,13 +552,19 @@ function saveArray($tableArray)
                aria-selected="true">Из Excel</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab" aria-controls="profile"
+            <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab"
+               aria-controls="profile"
                aria-selected="false">Из Базы Данных</a>
         </li>
         <li class="nav-item">
             <a class="nav-link" id="productNew-tab" data-toggle="tab" href="#productNew" role="tab"
                aria-controls="productNew"
                aria-selected="false">Новые товары</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" id="productNew-tab" data-toggle="tab" href="#diffrentPrice" role="tab"
+               aria-controls="diffrentPrice"
+               aria-selected="false">Поменялась цена товара</a>
         </li>
     </ul>
 
@@ -524,15 +593,10 @@ function saveArray($tableArray)
         </div>
 
         <div class="tab-pane fade" id="productNew" role="tabpanel" aria-labelledby="productNew-tab">
-
-
-
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
             $table = printTableDifference($diffBarcodes, $excelArray);
             serialize($table);
-
-            //pr($table);
 
             $arr = [];
             foreach ($table as $row) {
@@ -577,6 +641,18 @@ function saveArray($tableArray)
                 <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+
+        <div class="tab-pane fade" id="diffrentPrice" role="tabpanel" aria-labelledby="diffrentPrice">
+            <h2>Товары, цена которых поменялась</h2>
+            <?php
+            //pr($productDifference);
+            if (!empty($productDifference)){
+                printArrayAsTable($productDifference);
+            }else{
+                echo "Нет товаров в которых поменялась цена";
+            }
+            ?>
         </div>
     </div>
 </div>
