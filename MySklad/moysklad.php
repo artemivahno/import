@@ -76,14 +76,14 @@
             $rows	= !empty($data['rows'])			? $data['rows']			: [];
             $size	= !empty($data['meta']['size'])	? $data['meta']['size']	: 0;
 
-            if ($options['offset'] < $size && $stop > 0) {
+            /*if ($options['offset'] < $size && $stop > 0) {
                 // Не более 99 раз качаем данные из Мой Склад
                 $options['offset'] += $options['limit'];
                 $stop--;
                 list($r, $s) = download($type, $options, $stop, $postfix, $prefix);
                 $rows = array_merge($rows, $r);
                 $size = ($s > 0) ? $s : $size;
-            }
+            }*/
         }
         return [$rows, $size];
     }

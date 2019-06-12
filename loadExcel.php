@@ -183,7 +183,7 @@ function printTableDifference($diffBarcodes, $excelArray)
 $diffPrice = compareSame($dbArray, $excelArray);
 function printDiffPrice($diffPrice,$excelArray,$dbPrice)
 {
-    $usd = 2.08;
+    $usd = $_POST['usdRate'];
     $result = [];
     $tmpArr = [];
     //находим товары имеющиеся в бд
@@ -485,11 +485,11 @@ function dbQueryArray($query = '')
                 var key2 = $(this).data('key2');
                 //alert(key1, key2)
                 $.ajax({
-                    url: "saveArrDB.php",
+                    url: "saveArrMS.php",
                     type: "POST",
                     data: {key1: key1, key2: key2},
                     success: function (result) {
-                        alert('Товар загружен в базу данных');
+                        alert('Товар загружен в Мой склад');
                     }
                 });
                 $(this).remove();
@@ -500,16 +500,16 @@ function dbQueryArray($query = '')
             });
             function work() {
                 if ($('.product')[0]) {
-                    alert("Добавить все товары. Для отмены нажми F5");
+                    alert("Добавить все товары в Мой Склад. Для отмены нажми F5");
                     setInterval(function () {
                         $('.product').first().click()
-                    }, 500);
+                    }, 1000);
                 } else {
                     alert("Нет товаров для загрузки");
                 }
             }
 
-            /*function alert() {
+            function alert() {
                 var alertSuccess = $('.alert-success');
 
                 alertSuccess.css('display', 'block');
@@ -517,7 +517,7 @@ function dbQueryArray($query = '')
                     alertSuccess.hide();
                 }, 500);
 
-            }*/
+            }
         })
 
 
@@ -528,12 +528,7 @@ function dbQueryArray($query = '')
 <hr>
 <div class="container"><h1>Сводные таблицы</h1>
     <span>
-        <form method='post' enctype="multipart/form-data" action="processMSklad.php">
-            <div class="form-group">
-                <br>
-                <button type="submit" class="btn btn-primary pull-right"> Загрузить из М.Склад в Базу</button>
-            </div>
-        </form>
+
 
     </span>
 
@@ -613,7 +608,7 @@ function dbQueryArray($query = '')
                 <thead>
                 <tr>
                     <th>
-                        <button class="all">Добавить все товары</button>
+                        <button class="all">Добавить все товары в Мой Склад</button>
                     </th>
                     <th><?php echo implode('</th><th>', array_keys(current($arr))); ?></th>
                 </tr>
@@ -632,7 +627,7 @@ function dbQueryArray($query = '')
                     <tr>
                         <td>
                             <button class="product" data-key1="<?php echo $row['ProductAliasValue'] ?>"
-                                    data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить
+                                    data-key2="<?php echo $row['CodeAliasValue'] ?>">Добавить в Мой Склад
                             </button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
@@ -644,7 +639,7 @@ function dbQueryArray($query = '')
         </div>
 
         <div class="tab-pane fade" id="diffrentPrice" role="tabpanel" aria-labelledby="diffrentPrice">
-            <h2>Товары, цена которых поменялась</h2>
+            <h2>Товары, цена которых поменялась. /Курс пересчета: <?php echo (double)$_POST['usdRate'] ?>/</h2>
             <?php
             //pr($productDifference);
             if (!empty($productDifference)){

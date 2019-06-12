@@ -6,14 +6,16 @@ require_once 'config.php';
 $key1 = isset($_REQUEST['key1']) ? $_REQUEST['key1'] :"";
 $key2 = isset($_REQUEST['key2']) ? $_REQUEST['key2'] :"";
 
-addProductMS($key1);
+addProductMS($key1,$key2);
 
-function addProductMS($name) {
+function addProductMS($name,$barcodes) {
     $name           = $name;
+    $barcodes       = $barcodes;
     //$description    = "Связанная отгрузка: $demandName от ".date('d.m.Y H:i:s');
 
     $formdata = [
         'name'  => $name,
+        'barcodes'  => [$barcodes],
     ];
     $body = putJSONarray('product', $formdata, 'POST');
 
@@ -58,6 +60,8 @@ function putJSONarray($type, $data, $method='PUT') {
     $body = json_decode($body, true);
     return $body;
 }
+
+
 
 //Добавляет товар в базу с указанными полями
 /*$item = [];

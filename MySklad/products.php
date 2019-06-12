@@ -41,8 +41,10 @@ class CKayaMoyskladProducts extends CKayaMoyskladSave {
 
         $fields['name']                 = str_replace('\\', '', $fields['name']);
         $fields['archived']		        = self::getKeyValue($item, 'archived', 'bool');
-        $fields['barcodes']	            = ''.self::getKeyValue($item, 'barcodes');
+        //$fields['barcodes']	            = ''.self::getKeyValue($item, 'barcodes');
+        $fields['barcodes']	            = join(self::getKeyValue($item, 'barcodes'));
         //$fields['barcodes']	            = !empty($fields['barcodes']) ? join($fields['barcodes'], ', ') : $fields['barcodes'];
+        //$fields['barcodes']	            = self::getKeyValue($item, 'barcodes');
 
         // Сохраняем картинку товара
 //        if (!empty($fields['imageMiniature'])) {
@@ -74,9 +76,9 @@ class CKayaMoyskladProducts extends CKayaMoyskladSave {
         self::unsetKeyIfSet($item, 'attributes');
 
         // Сохраняем цены
-        /*if (!empty($item['salePrices'])) {
+        if (!empty($item['salePrices'])) {
             self::saveProductPrices($item['salePrices'], $uuid);
-        }*/
+        }
         //self::unsetKeyIfSet($item, 'salePrices');
 
 

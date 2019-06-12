@@ -17,17 +17,29 @@
             crossorigin="anonymous"></script>
 </head>
 <body>
-
 <form method='post' enctype="multipart/form-data" action="loadExcel.php">
     <div class="form-group">
+
         <label for="FormControlFile">Импорт Прайса</label>
         <br>
-	    <input name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
+        <label for="usdRate">Курс пересчета USD</label>
+        <input type="number" name="usdRate" min="1" max="5" value="2.08" step="0.01" required>
+        <br>
+        <br>
+	    <input required name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
         <br>
         <button type="submit" class="btn btn-primary pull-right"> Загрузить</button>
         <button type="reset" class="btn btn-danger">Отмена</button>
     </div>
 </form>
+
+<form method='post' enctype="multipart/form-data" action="processMSklad.php">
+    <div class="form-group">
+        <br>
+        <button type="submit" class="btn btn-primary pull-right"> Загрузить все товары из М.Склад в Базу</button>
+    </div>
+</form>
+
 </body>
 </html>
 
