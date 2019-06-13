@@ -3,19 +3,31 @@ require_once 'MySklad/products.php';
 require_once 'core.php';
 require_once 'config.php';
 
-$key1 = isset($_REQUEST['key1']) ? $_REQUEST['key1'] :"";
-$key2 = isset($_REQUEST['key2']) ? $_REQUEST['key2'] :"";
+$keyName = isset($_REQUEST['key1']) ? $_REQUEST['key1'] :"";
+$keyCode = isset($_REQUEST['key2']) ? $_REQUEST['key2'] :"";
+$keyDescr = isset($_REQUEST['key3']) ? $_REQUEST['key3'] :"";
+$weight = isset($_REQUEST['key4']) ? $_REQUEST['key4'] :"";
+$volume = isset($_REQUEST['key5']) ? $_REQUEST['key5'] :"";
 
-addProductMS($key1,$key2);
+$manufacturer =  $_POST['manufacturer'];
 
-function addProductMS($name,$barcodes) {
-    $name           = $name;
-    $barcodes       = $barcodes;
-    //$description    = "Связанная отгрузка: $demandName от ".date('d.m.Y H:i:s');
+$volume = array_product(explode("*", $volume));//перемножаем с разделением по *
+
+addProductMS($keyName,$keyCode,$keyDescr,$weight,$volume);
+
+function addProductMS($name,$barcodes,$description,$weight,$volume) {
+
+
 
     $formdata = [
-        'name'  => $name,
-        'barcodes'  => [$barcodes],
+        'name'          => $name,
+        'weight'          => $weight/1000,
+        'volume'          => $volume/1000000,
+
+        'vat'           => 20,
+        //'effectiveVat'  => 20,
+        'barcodes'      => [$barcodes],
+        'description'   => $description,
     ];
     $body = putJSONarray('product', $formdata, 'POST');
 

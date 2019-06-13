@@ -76,6 +76,7 @@ function getExcelData($inputFileName)
 
             "IMAGE" => "ImageAliasValue",
             "Image" => "ImageAliasValue",
+            "Picture" => "ImageAliasValue",
 
             "PACKAGE" => "PackageAliasValue",
             "Package" => "PackageAliasValue",
@@ -127,8 +128,25 @@ function getExcelData($inputFileName)
 
 //помещаем данные в Excel файл
 $excelArray = getExcelData($inputTmpFileName);
+//pr($excelArray);
 
-//pr($excelArray['Price(USD)Alias']);
+
+
+/*
+$tmp = [];
+$tmp1 = [];
+foreach ($excelArray as $key=>$value){
+    foreach ($value as $v){
+        unset($v['ImageAliasValue']);
+        unset($v['PackageAliasValue']);
+        $tmp[] = $v;
+    }
+    //$tmp1[array_keys($value)] = $tmp;
+}
+$tmp1=$tmp;
+pr($tmp1);*/
+
+
 
 
 $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
@@ -482,14 +500,21 @@ function dbQueryArray($query = '')
         $(document).ready(function () {
             //кнопка добавки одного товара
             $(".product").click(function () {
-                var key1 = $(this).data('key1');
-                var key2 = $(this).data('key2');
-                //var key3 = $(this).data('key3');
-                //alert(parseFloat('key3'));
+                var keyName = $(this).data('key1');
+                var keyCode = $(this).data('key2');
+                var keyDescr = $(this).data('key3');
+                var keyWeidht = $(this).data('key4');
+                var keyVolume = $(this).data('key5');
+                alert(keyVolume);
                 $.ajax({
                     url: "saveArrMS.php",
                     type: "POST",
-                    data: {key1: key1, key2: key2/*, key3: key3*/},
+                    data: { key1: keyName,
+                            key2: keyCode,
+                            key3: keyDescr,
+                            key4: keyWeidht,
+                            key5: keyVolume,
+                    },
                     success: function (result) {
                         alert('Товар загружен в Мой склад');
                     }
@@ -512,15 +537,14 @@ function dbQueryArray($query = '')
                 }
             }
                 //альтернативный показ уведомлений
-            function alert() {
+            /*function alert() {
                 var alertSuccess = $('.alert-success');
 
                 alertSuccess.css('display', 'block');
                 setTimeout(function () {
                     alertSuccess.hide();
                 }, 500);
-
-            }
+            }*/
         })
 
 
@@ -630,9 +654,11 @@ function dbQueryArray($query = '')
                     <tr>
                         <td>
                             <button class="product"
-                                    data-key1="<?php echo $row['ProductAliasValue'] ?>"
+                                    data-key1="<?php echo $row['ProductAliasValue'].' '.$row['ColorAliasValue'] ?>"
                                     data-key2="<?php echo $row['CodeAliasValue'] ?>"
-                                    <!--data-key3="--><?php /*echo $row['Price(USD)Alias'] */?>"
+                                    data-key3="<?php echo $row['DescriptionAliasValue'] ?>"
+                                    data-key4="<?php echo $row['Product Weight (g)Alias'] ?>"
+                                    data-key5="<?php echo $row['Color box Size (cm)Alias'] ?>"
                             >Добавить в Мой Склад
                             </button>
                         </td>

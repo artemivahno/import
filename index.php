@@ -25,6 +25,9 @@
         <label for="usdRate">Курс пересчета USD</label>
         <input type="number" name="usdRate" min="1" max="5" value="2.08" step="0.01" required>
         <br>
+        <label for="manufacturer">Введите производителя</label>
+        <input type="text" size="50" name="manufacturer"  placeholder=" Если пустой - =NO NAME">
+        <br>
         <br>
 	    <input required name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
         <br>
