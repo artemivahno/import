@@ -6,28 +6,26 @@ require_once 'config.php';
 $keyName = isset($_REQUEST['key1']) ? $_REQUEST['key1'] :"";
 $keyCode = isset($_REQUEST['key2']) ? $_REQUEST['key2'] :"";
 $keyDescr = isset($_REQUEST['key3']) ? $_REQUEST['key3'] :"";
-$weight = isset($_REQUEST['key4']) ? $_REQUEST['key4'] :"";
-$volume = isset($_REQUEST['key5']) ? $_REQUEST['key5'] :"";
+$weight = isset($_REQUEST['key4']) ? $_REQUEST['key4'] :"";// вес
+$volume = isset($_REQUEST['key5']) ? $_REQUEST['key5'] :"";// объем
+$buyPrice = isset($_REQUEST['key6']) ? $_REQUEST['key6'] :"";
 
 $manufacturer =  $_POST['manufacturer'];
 
-$volume = array_product(explode("*", $volume));//перемножаем с разделением по *
+$volume = array_product(explode("*", $volume));//габариты перемножаем с разделением по * получаем объем
 
-addProductMS($keyName,$keyCode,$keyDescr,$weight,$volume);
+addProductMS($keyName,$keyCode,$keyDescr,$weight,$volume,$buyPrice);
 
-function addProductMS($name,$barcodes,$description,$weight,$volume) {
-
-
+function addProductMS($name,$barcodes,$description,$weight,$volume,$buyPrice) {
 
     $formdata = [
-        'name'          => $name,
-        'weight'          => $weight/1000,
-        'volume'          => $volume/1000000,
-
-        'vat'           => 20,
-        //'effectiveVat'  => 20,
-        'barcodes'      => [$barcodes],
-        'description'   => $description,
+        'name'              => $name,
+        'weight'            => $weight/1000,
+        'volume'            => $volume/1000000,
+        //'buyPrice'          => $buyPrice,
+        'vat'               => 20,
+        'barcodes'          => [$barcodes],
+        'description'       => $description,
     ];
     $body = putJSONarray('product', $formdata, 'POST');
 

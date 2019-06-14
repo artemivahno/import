@@ -7,162 +7,114 @@ require_once 'vendor/autoload.php';
 require_once 'config.php';
 require_once 'core.php';
 
-$inputTmpFileName = $_FILES['uploadfile']["tmp_name"];
-//echo 'TMP-FILE-NAME: ' . $inputTmpFileName . '<br>';
-$inputFileName = $_FILES['uploadfile']["name"];
-//echo 'TMP-FILE-NAME: ' . $inputFileName . '<br>';
+$inputTmpFileName = $_FILES['uploadfile']["tmp_name"]; //получаем ссыдку на загруженный файл
 
+$excelArray = getExcelData($inputTmpFileName);//помещаем данные в Excel файл
+$dbArray = callDataDB();//получаем данные из Базы Данных
+$dbPrice = dbQueryArray(callDBPrice());
 
-$excelArray = [];
+//запускаем сравнение базы и Excel
+$diffBarcodes = compareExistance($dbArray, $excelArray);
+$diffPrice = compareSame($dbArray, $excelArray);
 
-// выводим весь ezcel
-function getExcelData($inputFileName)
-{
-    $worksheetArray = [];
-    $allExcelSheet = [];
-    $spreadsheet = IOFactory::load($inputFileName); //create new speedsheen object
+$productDifference = printDiffPrice($diffPrice,$excelArray,$dbPrice);
+
+// получаем весь excel Здесь обработка всего массива перед выводом на страницу
+function getExcelData($inputFileName){
+    $allExcelSheet = [];//весь массив из excel
+    $spreadsheet = IOFactory::load($inputFileName); //создаем объект Лист
     $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
 
-    /*foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) { // выводим для наглядности Имена листов
-        echo '<br/>' . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';
-    }*/
     foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
-
-        //$worksheet = $spreadsheet->getSheet($sheetIndex);
         $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
-
-        /*echo "========================++++++++++++++++++++++++========================================" . '<br/>'
-            . "Номер и имя листа: " . ($sheetIndex . ' -> ' . $loadedSheetName) . '<br/>';*/
-
-        //Заполнияем MergeCells
-        $mergedCellsRange = $worksheet->getMergeCells();
-
+        $mergedCellsRange = $worksheet->getMergeCells();//получаем массив объединенных ячеек
         foreach ($mergedCellsRange as $currMergedRange) {
-
-            //A1,B1.C1
-            $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);
-            //freom A1:O1       get array A1,O1
-            $currMergedCellsArray = Coordinate::splitRange($currMergedRange);
-            //получаем значенеие первой ячейки
-            $cellAdres = $currMergedCellsArray[0][0];
+            $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);//A1,B1.C1
+            $currMergedCellsArray = Coordinate::splitRange($currMergedRange);//freom A1:O1       get array A1,O1
+            $cellAdres = $currMergedCellsArray[0][0];//получаем значенеие первой ячейки
             $cell = $worksheet->getCell($cellAdres)->getValue();
-            //заполняем все ячейки из первой
-            foreach ($columnIndex as $adres) {
+            foreach ($columnIndex as $adres) { //заполняем все ячейки из первой
                 $worksheet->setCellValue($adres, $cell);
             }
         }
-
-        //преобразуем в array
-        $worksheetArray = $worksheet->toArray();
-        $worksheetArray = process($worksheetArray);
-        $worksheetArrayPrint = [];
-        $worksheetArray = dellCategoryRow($worksheetArray);
-        $worksheetArrayPrint = $worksheetArray;
-
-        $alias = array(
-            "Category" => "CategoryAliasValue",
-
-            "Product" => "ProductAliasValue",
-            "PRODUCT" => "ProductAliasValue",
-            "Name" => "ProductAliasValue",
-
-            "EAN CODE" => "CodeAliasValue",
-            "EAN Code" => "CodeAliasValue",
-
-            "Colors" => "ColorAliasValue",
-            "COLORS" => "ColorAliasValue",
-            "Color" => "ColorAliasValue",
-            "colors" => "ColorAliasValue",
-
-            "IMAGE" => "ImageAliasValue",
-            "Image" => "ImageAliasValue",
-            "Picture" => "ImageAliasValue",
-
-            "PACKAGE" => "PackageAliasValue",
-            "Package" => "PackageAliasValue",
-
-            "Description" => "DescriptionAliasValue",
-            "DESCRIPTION" => "DescriptionAliasValue",
-
-            "Price (USD)" => "Price(USD)Alias",
-            "Wholesale Price(USD)" => "Price(USD)Alias",
-            "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
-            "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
-            "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
-
-            "MSRP (USD)" => "MSRP (USD)Alias",
-
-            "Product Weight (g)" => "Product Weight (g)Alias",
-
-            "Carton Weight (kg)" => "Carton Weight (kg)Alias",
-
-            "Color box Size (cm)" => "Color box Size (cm)Alias",
-            "Color box size (cm)" => "Color box Size (cm)Alias",
-
-            "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
-
-            "Small box Size(cm)" => "Small box Size(cm)Alias",
-
-            "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
-
-            "Carton Size(cm)" => "Carton Size(cm)Alias",
-        );
-
-        $worksheetArray = setAlias($worksheetArray, $alias); //меняем название колонок на Алиасы
+        $worksheetArray = $worksheet->toArray();//преобразуем в array
+        $worksheetArray = dellEmptyRowFillCategory($worksheetArray);//удаляем пустые строки, добавляем столбец с категорией
+        $worksheetArray = dellCategoryRow($worksheetArray);//удаляем дубли строки категорий
+        $worksheetArray = setAlias($worksheetArray, getAliases()); //меняем название колонок на Алиасы
         $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
-
-        // pr($worksheetArray);
-        //printArrayAsTable(var_dump($worksheetArray));//печатаем таблицу
-
-        //printArrayAsTable($worksheetArrayPrint);//печатаем таблицу
-
-        //$printAllExcelSheet[$loadedSheetName] = $worksheetArray;
-        $allExcelSheet[$loadedSheetName] = $worksheetArray;
-
+        $allExcelSheet[$loadedSheetName] = $worksheetArray;//
     }
-    //pr($allExcelSheet);
-    //printArrayAsTable($allExcelSheet);
     return $allExcelSheet;
-
 }
 
-//помещаем данные в Excel файл
-$excelArray = getExcelData($inputTmpFileName);
-//pr($excelArray);
+//все алиасы
+function getAliases (){
+    $alias = array(
+        "Category" => "CategoryAliasValue",
 
+        "Product" => "ProductAliasValue",
+        "PRODUCT" => "ProductAliasValue",
+        "Name" => "ProductAliasValue",
 
+        "EAN CODE" => "CodeAliasValue",
+        "EAN Code" => "CodeAliasValue",
 
-/*
-$tmp = [];
-$tmp1 = [];
-foreach ($excelArray as $key=>$value){
-    foreach ($value as $v){
-        unset($v['ImageAliasValue']);
-        unset($v['PackageAliasValue']);
-        $tmp[] = $v;
-    }
-    //$tmp1[array_keys($value)] = $tmp;
+        "Colors" => "ColorAliasValue",
+        "COLORS" => "ColorAliasValue",
+        "Color" => "ColorAliasValue",
+        "colors" => "ColorAliasValue",
+
+        "IMAGE" => "ImageAliasValue",
+        "Image" => "ImageAliasValue",
+        "Picture" => "ImageAliasValue",
+
+        "PACKAGE" => "PackageAliasValue",
+        "Package" => "PackageAliasValue",
+
+        "Description" => "DescriptionAliasValue",
+        "DESCRIPTION" => "DescriptionAliasValue",
+
+        "Price (USD)" => "Price(USD)Alias",
+        "Wholesale Price(USD)" => "Price(USD)Alias",
+        "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
+        "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
+        "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
+
+        "MSRP (USD)" => "MSRP (USD)Alias",
+
+        "Product Weight (g)" => "Product Weight (g)Alias",
+
+        "Carton Weight (kg)" => "Carton Weight (kg)Alias",
+
+        "Color box Size (cm)" => "Color box Size (cm)Alias",
+        "Color box size (cm)" => "Color box Size (cm)Alias",
+
+        "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
+
+        "Small box Size(cm)" => "Small box Size(cm)Alias",
+
+        "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
+
+        "Carton Size(cm)" => "Carton Size(cm)Alias",
+    );
+    return $alias;
 }
-$tmp1=$tmp;
-pr($tmp1);*/
 
-
-
-
-$query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
-$queryPrice =   "SELECT `uuid` ,`name`,`barcodes`,`value` 
+function callDataDB(){
+    $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+    $dbArray = dbQueryArray($query);
+    return $dbArray;
+}
+function callDBPrice(){
+    $queryPrice =   "SELECT `uuid` ,`name`,`barcodes`,`value` 
                 FROM ms_products
                 LEFT JOIN ms_product_prices ON ms_products.uuid=ms_product_prices.productUuid
                 WHERE ms_product_prices.type='Оптовая цена'
                 ";
-$query1 = "SELECT `barcodes` FROM ms_products";
-$dbArray = dbQueryArray($query);
-$dbPrice = dbQueryArray($queryPrice);
-//pr($dbPrice );
+    return $queryPrice;
+}
 
-//запускаем сравнение базы и Excel
-$diffBarcodes = compareExistance($dbArray, $excelArray);
-
+//сравнение базы данных и Excel
 function compareExistance($dbArray, $excelArray)
 {
     //получаем ключи из Базы
@@ -197,62 +149,48 @@ function printTableDifference($diffBarcodes, $excelArray)
     return $result;
 }
 
-
-$diffPrice = compareSame($dbArray, $excelArray);
-function printDiffPrice($diffPrice,$excelArray,$dbPrice)
-{
-    $usd = $_POST['usdRate'];
+function printDiffPrice($diffPrice,$excelArray,$dbPrice){
+    $usd = $_POST['usdRate'];//
     $result = [];
     $tmpArr = [];
-    //находим товары имеющиеся в бд
-    //pr($dbPrice);
 
     //получаем массив баркод-цена(из базы)
     $dbArray=[];
     foreach ($dbPrice as $row){
         $dbArray[$row['barcodes']] = $row['value'];
     }
-    //pr($dbArray);
 
     foreach ($excelArray as $row) {
         $tmpArr[] = (array_intersect_key($row, array_flip($diffPrice)));
     }
-    //pr($tmpArr);
 
     //очищаем все лишнее в строке Price(USD)Alias
     foreach ($tmpArr as $row){
-      foreach ($row as $value){
-            //pr($value['CodeAliasValue']);
-          $value['CodeAliasValue'] = trim($value['CodeAliasValue']);
+        foreach ($row as $value){
+            $value['CodeAliasValue'] = trim($value['CodeAliasValue']);
             //убираем знак $ и оставляем только цифры в Price(USD)Alias
-          $value['Price(USD)Alias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
+            $value['Price(USD)Alias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
             //если товар с таким кодом есть в базе данных вставить цену
-          if ($dbArray[$value['CodeAliasValue']]){
-
-              array_unshift($value, /*$value['PriceDataBase'] =*/
-                  round($dbArray[$value['CodeAliasValue']]/$usd,2));
-          }/*else {
-              array_unshift($value, $value['PriceDataBase'] = '');
-          }*/
+            if ($dbArray[$value['CodeAliasValue']]){
+                array_unshift($value, /*$value['PriceDataBase'] =*/
+                    round($dbArray[$value['CodeAliasValue']]/$usd,2));
+            }
             $tmp[]=$value;
-          $result = $tmp;
-      }
+            $result = $tmp;
+        }
     }
-    //pr($result);
     return $result;
 }
-$productDifference = printDiffPrice($diffPrice,$excelArray,$dbPrice);
 
+//проверяет есть ли товар из Excel в Базе Данных
 function compareSame($dbArray, $excelArray)
 {
     //получаем ключи из Базы
     $dbBarcodes = array_column($dbArray, 'barcodes');
-
     //получаем ключи из excel
     foreach ($excelArray as $row) {
         $excelBarcodes[] = array_column($row, 'CodeAliasValue');
     }
-
     //trim excelBarcodes
     foreach ($excelBarcodes as $row) {
         foreach ($row as $value) {
@@ -260,17 +198,13 @@ function compareSame($dbArray, $excelArray)
         }
     }
     $excelBarcodes = $tmpArray;
-
     $sameBarcodes = array_uintersect($dbBarcodes, $excelBarcodes, 'strcasecmp');
-    //echo "Товары представленные в Базе данных: ";
-    //pr($sameBarcodes);
 
     return $sameBarcodes;
 }
 
-
-function process($data)
-{
+//удаляет пустые строки и заполняет столбец категорий по названию листа
+function dellEmptyRowFillCategory($data) {
     $data = removeEmptyColumns($data);
     foreach ($data as $item) {
         if (isEmptyRow($item)) {
@@ -288,11 +222,9 @@ function process($data)
     }
 
     return $result;
-
 }
 
-//Отсекаем пустые строки
-
+//Отсекает пустые строки
 function isEmptyRow($row)
 {
     $empty = true;
@@ -305,23 +237,19 @@ function isEmptyRow($row)
     return $empty;
 }
 
-//Отсекаем пустые колонки
+
+//Отсекает пустые колонки
 function removeEmptyColumns($data)
 {
-    //pr($data);
-    $columns = [];
     if (empty($data[0])) {
         return [];
     }
-
     $columns = array_keys($data[0]);
     foreach ($columns as $k => $item) {
         $columns[$k] = false;
     }
-
     foreach ($data as $row) {
         foreach ($row as $k => $item) {
-
             if ($columns[$k]) {
                 continue;
             }
@@ -330,7 +258,6 @@ function removeEmptyColumns($data)
             }
         }
     }
-
     $result = [];
     foreach ($data as $row) {
         $newrow = [];
@@ -344,32 +271,17 @@ function removeEmptyColumns($data)
             }
         }
         $result[] = $newrow;
-
     }
-
     return $result;
 }
 
-function arrayColRemove($array, $col_index)
-{
-    if (is_array($array) && count($array)) {
-        foreach ($array as $row_index => $row) {
-            if (array_key_exists($col_index, $row)) {
-                unset($array[$row_index][$col_index]);
-                $array[$row_index] = array_values($array[$row_index]);
-            }
-        }
-    }
-    return $array;
-}
-
+//определяет является ли строка Категориями
 function isCategoryRow($row)
 {
     $result = true;
     if ($row[0] !== $row[1]) {
         return false;
     }
-
     foreach ($row as $k => $item) {
         if ($k[0] > 0) {
             if (!empty($item)) {
@@ -380,6 +292,7 @@ function isCategoryRow($row)
     return true;
 }
 
+//удаляет строку категорий (для отсутствия дублей эт.строки)
 function dellCategoryRow($data)
 {
     $new = [];
@@ -400,6 +313,7 @@ function trimall($string)
         preg_replace("/\s+/", " ", trim($string)));
 }
 
+//заменяет названия колонок на названия из списка Алиасов
 function setAlias($inputArray, $alias)
 {
     foreach ($inputArray as $row) {
@@ -419,11 +333,11 @@ function setAlias($inputArray, $alias)
     return $inputArray;
 }
 
+//устанавливает имена колонок в ключи
 function setCollumnAsKey($inputArray)
 {
     $tmpArray = [];
     $tmpArray2 = [];
-    ///pr($inputArray);
     foreach ($inputArray as $row) {
         //определяем строку заголовков
         if (array_search('ProductAliasValue', $row) == true) {
@@ -431,51 +345,20 @@ function setCollumnAsKey($inputArray)
             if (!empty($collumnArray)) {
                 $tmp = $collumnArray;
             }
-            //pr($row);
         }
-        //pr($tmp);
         //добавляем имена колонок в ключи
         if (!empty($tmp) && !empty($row)) {
             $tmpArray2 = array_combine($tmp, $row);
         }
+            //удаляем неиспользуемые колонки
+            unset($tmpArray2['ImageAliasValue']);
+            unset($tmpArray2['PackageAliasValue']);
+        //добавляем CODE   в качестве ключа строки
         $tmpArray[trimall($tmpArray2['CodeAliasValue'])] = $tmpArray2;
-        //pr($tmpArray);
     }
     $inputArray = $tmpArray;
     return $inputArray;
 }
-
-//=====DATABASE ==================================
-
-/*function dbQuery($query = '')
-{
-
-    $link = mysqli_connect(DB_HOST, DB_USER,
-        DB_PASS, DB_BASE)
-    or die("Couldn't connect to the MySQL server\n");
-    mysqli_query($link, 'SET NAMES utf8')
-    or die("Invalid set utf8 " . mysqli_error($link) . "\n");
-    $db = mysqli_select_db($link, DB_BASE)
-    or die("db can't be selected\n");
-
-    $result = mysqli_query($link, $query)
-    or die("Query error: " . mysqli_error($link) . '[' . $query . ']' . "\n");
-    mysqli_close($link);
-    return $result;
-}
-
-function dbQueryArray($query = '')
-{
-    $result = dbQuery($query);
-    $data = array();
-    while ($row = mysqli_fetch_assoc($result)) {
-        $data[] = $row;
-    }
-    mysqli_free_result($result);
-
-    return $data;
-}*/
-//=====DATABASE ==================================
 
 
 ?>
@@ -505,7 +388,8 @@ function dbQueryArray($query = '')
                 var keyDescr = $(this).data('key3');
                 var keyWeidht = $(this).data('key4');
                 var keyVolume = $(this).data('key5');
-                alert(keyVolume);
+                var keyByPrice = $(this).data('key6');
+                alert(keyByPrice);
                 $.ajax({
                     url: "saveArrMS.php",
                     type: "POST",
@@ -514,6 +398,7 @@ function dbQueryArray($query = '')
                             key3: keyDescr,
                             key4: keyWeidht,
                             key5: keyVolume,
+                            key6: keyByPrice,
                     },
                     success: function (result) {
                         alert('Товар загружен в Мой склад');
@@ -644,7 +529,7 @@ function dbQueryArray($query = '')
                 <?php foreach ($arr as $row):
                 array_map('htmlentities', $row);
                 ?>
-                <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"):
+                <?php if ($row['CategoryAliasValue'] == "CategoryAliasValue"): //если заголовок
                 continue; ?>
                 <thead>
                 <td></td>
@@ -659,6 +544,7 @@ function dbQueryArray($query = '')
                                     data-key3="<?php echo $row['DescriptionAliasValue'] ?>"
                                     data-key4="<?php echo $row['Product Weight (g)Alias'] ?>"
                                     data-key5="<?php echo $row['Color box Size (cm)Alias'] ?>"
+                                    data-key6="<?php echo $row['Price(USD)Alias'] ?>"
                             >Добавить в Мой Склад
                             </button>
                         </td>
