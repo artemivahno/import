@@ -8,16 +8,17 @@ require_once 'config.php';
 require_once 'core.php';
 
 $inputTmpFileName = $_FILES['uploadfile']["tmp_name"]; //получаем ссыдку на загруженный файл
+$inputFileName = $_FILES['uploadfile']["name"];
 
-$excelArray = getExcelData($inputTmpFileName);//помещаем данные в Excel файл
+$dataExcel = getExcelData($inputTmpFileName);//помещаем данные в Excel файл
 $dbArray = callDataDB();//получаем данные из Базы Данных
 $dbPrice = dbQueryArray(callDBPrice());
 
 //запускаем сравнение базы и Excel
-$diffBarcodes = compareExistance($dbArray, $excelArray);
-$diffPrice = compareSame($dbArray, $excelArray);
+$diffBarcodes = compareExistance($dbArray, $dataExcel);
+$diffPrice = compareSame($dbArray, $dataExcel);
 
-$productDifference = printDiffPrice($diffPrice,$excelArray,$dbPrice);
+$productDifference = printDiffPrice($diffPrice,$dataExcel,$dbPrice);
 
 // получаем весь excel Здесь обработка всего массива перед выводом на страницу
 function getExcelData($inputFileName){
@@ -115,13 +116,14 @@ function callDBPrice(){
 }
 
 //сравнение базы данных и Excel
-function compareExistance($dbArray, $excelArray)
+function compareExistance($dbArray, $dataExcel)
 {
     //получаем ключи из Базы
     $dbBarcodes = array_column($dbArray, 'barcodes');
+    pr($dbArray);
 
     //получаем ключи из excel
-    foreach ($excelArray as $row) {
+    foreach ($dataExcel as $row) {
         $excelBarcodes[] = array_column($row, 'CodeAliasValue');
     }
     //trim excelBarcodes
@@ -150,7 +152,7 @@ function printTableDifference($diffBarcodes, $excelArray)
 }
 
 function printDiffPrice($diffPrice,$excelArray,$dbPrice){
-    $usd = $_POST['usdRate'];//
+    $usd = $_POST['usdRate'];//курс пересчета
     $result = [];
     $tmpArr = [];
 
@@ -159,6 +161,9 @@ function printDiffPrice($diffPrice,$excelArray,$dbPrice){
     foreach ($dbPrice as $row){
         $dbArray[$row['barcodes']] = $row['value'];
     }
+    echo 'asdf';
+    pr($dbPrice);
+
 
     foreach ($excelArray as $row) {
         $tmpArr[] = (array_intersect_key($row, array_flip($diffPrice)));
@@ -367,7 +372,9 @@ function setCollumnAsKey($inputArray)
 <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
@@ -502,7 +509,7 @@ function setCollumnAsKey($inputArray)
         <div class="tab-pane fade" id="productNew" role="tabpanel" aria-labelledby="productNew-tab">
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
-            $table = printTableDifference($diffBarcodes, $excelArray);
+            $table = printTableDifference($diffBarcodes, $dataExcel);
             serialize($table);
 
             $arr = [];

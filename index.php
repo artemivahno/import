@@ -1,50 +1,422 @@
+<?php
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+
+require_once 'vendor/autoload.php';
+require_once 'config.php';
+require_once 'core.php';
+
+if (!empty($_FILES['uploadfile']["tmp_name"])){
+    $inputTmpFileName = $_FILES['uploadfile']["tmp_name"]; //получаем ссыдку на загруженный файл
+    $dataExcel = getExcelData($inputTmpFileName);//помещаем данные в Excel файл
+    $dbArray = callDataDB();//получаем данные из Базы Данных
+    $dbPrice = dbQueryArray(callDBPrice());
+    //запускаем сравнение базы и Excel
+    $diffBarcodes = compareExistance($dbArray, $dataExcel);
+    $diffPrice = compareSame($dbArray, $dataExcel);
+
+    $productDifference = printDiffPrice($diffPrice,$dataExcel,$dbPrice);
+}
+
+
+// получаем весь excel Здесь обработка всего массива перед выводом на страницу
+function getExcelData($inputFileName){
+    $allExcelSheet = [];//весь массив из excel
+    $spreadsheet = IOFactory::load($inputFileName); //создаем объект Лист
+    $loadedSheetNames = $spreadsheet->getSheetNames(); //получаем имена листов
+
+    foreach ($loadedSheetNames as $sheetIndex => $loadedSheetName) {
+        $worksheet = $spreadsheet->setActiveSheetIndexByName($loadedSheetName);
+        $mergedCellsRange = $worksheet->getMergeCells();//получаем массив объединенных ячеек
+        foreach ($mergedCellsRange as $currMergedRange) {
+            $columnIndex = Coordinate::extractAllCellReferencesInRange($currMergedRange);//A1,B1.C1
+            $currMergedCellsArray = Coordinate::splitRange($currMergedRange);//freom A1:O1       get array A1,O1
+            $cellAdres = $currMergedCellsArray[0][0];//получаем значенеие первой ячейки
+            $cell = $worksheet->getCell($cellAdres)->getValue();
+            foreach ($columnIndex as $adres) { //заполняем все ячейки из первой
+                $worksheet->setCellValue($adres, $cell);
+            }
+        }
+        $worksheetArray = $worksheet->toArray();//преобразуем в array
+        $worksheetArray = dellEmptyRowFillCategory($worksheetArray);//удаляем пустые строки, добавляем столбец с категорией
+        $worksheetArray = dellCategoryRow($worksheetArray);//удаляем дубли строки категорий
+        $worksheetArray = setAlias($worksheetArray, getAliases()); //меняем название колонок на Алиасы
+        $worksheetArray = setCollumnAsKey($worksheetArray); //меняем ключ ячейки на название столбца .меняем ключ стороки на код товара
+        $allExcelSheet[$loadedSheetName] = $worksheetArray;//
+    }
+    return $allExcelSheet;
+}
+
+//все алиасы
+function getAliases (){
+    $alias = array(
+        "Category" => "CategoryAliasValue",
+
+        "Product" => "ProductAliasValue",
+        "PRODUCT" => "ProductAliasValue",
+        "Name" => "ProductAliasValue",
+
+        "EAN CODE" => "CodeAliasValue",
+        "EAN Code" => "CodeAliasValue",
+
+        "Colors" => "ColorAliasValue",
+        "COLORS" => "ColorAliasValue",
+        "Color" => "ColorAliasValue",
+        "colors" => "ColorAliasValue",
+
+        "IMAGE" => "ImageAliasValue",
+        "Image" => "ImageAliasValue",
+        "Picture" => "ImageAliasValue",
+
+        "PACKAGE" => "PackageAliasValue",
+        "Package" => "PackageAliasValue",
+
+        "Description" => "DescriptionAliasValue",
+        "DESCRIPTION" => "DescriptionAliasValue",
+
+        "Price (USD)" => "Price(USD)Alias",
+        "Wholesale Price(USD)" => "Price(USD)Alias",
+        "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
+        "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
+        "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
+
+        "MSRP (USD)" => "MSRP (USD)Alias",
+
+        "Product Weight (g)" => "Product Weight (g)Alias",
+
+        "Carton Weight (kg)" => "Carton Weight (kg)Alias",
+
+        "Color box Size (cm)" => "Color box Size (cm)Alias",
+        "Color box size (cm)" => "Color box Size (cm)Alias",
+
+        "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
+
+        "Small box Size(cm)" => "Small box Size(cm)Alias",
+
+        "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
+
+        "Carton Size(cm)" => "Carton Size(cm)Alias",
+    );
+    return $alias;
+}
+
+function callDataDB(){
+    $query = "SELECT `uuid` ,`name`,`barcodes` FROM ms_products";
+    $dbArray = dbQueryArray($query);
+    return $dbArray;
+
+}
+function callDBPrice(){
+    $queryPrice =   "SELECT `uuid` ,`name`,`barcodes`,`value` 
+                FROM ms_products
+                LEFT JOIN ms_product_prices ON ms_products.uuid=ms_product_prices.productUuid
+                WHERE ms_product_prices.type='Оптовая цена'
+                ";
+    //$queryPrice = dbQueryArray($query);
+    return $queryPrice;
+}
+
+//сравнение базы данных и Excel
+function compareExistance($dbArray, $excelArray)
+{
+    //получаем ключи из Базы
+    $dbBarcodes = array_column($dbArray, 'barcodes');
+    //получаем ключи из excel
+    foreach ($excelArray as $row) {
+        $excelBarcodes[] = array_column($row, 'CodeAliasValue');
+    }
+    //trim excelBarcodes
+    foreach ($excelBarcodes as $row) {
+        foreach ($row as $value) {
+            $tmpArray[] = trim($value);
+        }
+    }
+    $excelBarcodes = $tmpArray;
+
+    //сравниваем excel и базу
+    $diffBarcodes = array_diff($excelBarcodes, $dbBarcodes);
+    $diffBarcodes = array_unique($diffBarcodes);
+    return $diffBarcodes;
+}
+
+function printTableDifference($diffBarcodes, $dataExcel)
+{
+    $result = [];
+    foreach ($dataExcel as $row) {
+        $result[] = (array_intersect_key($row, array_flip($diffBarcodes)));
+    }
+    return $result;
+}
+
+function printDiffPrice($diffPrice,$dataExcel,$dbPrice){
+    $usd = $_POST['usdRate'];//
+    $result = [];
+    $tmpArr = [];
+
+    //получаем массив баркод-цена(из базы)
+    $dbArray=[];
+    foreach ($dbPrice as $row){
+        $dbArray[$row['barcodes']] = $row['value'];
+    }
+
+    foreach ($dataExcel as $row) {
+        $tmpArr[] = (array_intersect_key($row, array_flip($diffPrice)));
+    }
+    //pr($tmpArr);
+
+    //очищаем все лишнее в строке Price(USD)Alias
+    foreach ($tmpArr as $row){
+        foreach ($row as $value){
+            $value['CodeAliasValue'] = trim($value['CodeAliasValue']);
+            //убираем знак $ и оставляем только цифры в Price(USD)Alias
+            $value['Price(USD)Alias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
+            //если товар с таким кодом есть в базе данных вставить цену
+            if ($dbArray[$value['CodeAliasValue']]){
+                array_unshift($value, $value['PriceDataBase'] =
+                    round($dbArray[$value['CodeAliasValue']]/$usd,2));
+            }
+            $tmp[]=$value;
+            $result = $tmp;
+        }
+    }
+    return $result;
+}
+
+//проверяет есть ли товар из Excel в Базе Данных
+function compareSame($dbArray, $excelArray)
+{
+    //получаем ключи из Базы
+    $dbBarcodes = array_column($dbArray, 'barcodes');
+    //получаем ключи из excel
+    foreach ($excelArray as $row) {
+        $excelBarcodes[] = array_column($row, 'CodeAliasValue');
+    }
+    //trim excelBarcodes
+    foreach ($excelBarcodes as $row) {
+        foreach ($row as $value) {
+            $tmpArray[] = trim($value);
+        }
+    }
+    $excelBarcodes = $tmpArray;
+    $sameBarcodes = array_uintersect($dbBarcodes, $tmpArray, 'strcasecmp');
+
+    return $sameBarcodes;
+}
+
+//удаляет пустые строки и заполняет столбец категорий по названию листа
+function dellEmptyRowFillCategory($data) {
+    $data = removeEmptyColumns($data);
+    foreach ($data as $item) {
+        if (isEmptyRow($item)) {
+            continue;
+        }
+        $result[] = $item;
+    }
+    //fill category column
+    $category = '';
+    foreach ($result as $k => $row) {
+        if (isCategoryRow($row)) {
+            $category = $row[0];
+        }
+        array_unshift($result[$k], $category);
+    }
+
+    return $result;
+}
+
+//Отсекает пустые строки
+function isEmptyRow($row)
+{
+    $empty = true;
+    foreach ($row as $item) {
+        if (!empty($item)) {
+            $empty = false;
+            return $empty;
+        }
+    }
+    return $empty;
+}
+
+//Отсекает пустые колонки
+function removeEmptyColumns($data)
+{
+    if (empty($data[0])) {
+        return [];
+    }
+    $columns = array_keys($data[0]);
+    foreach ($columns as $k => $item) {
+        $columns[$k] = false;
+    }
+    foreach ($data as $row) {
+        foreach ($row as $k => $item) {
+            if ($columns[$k]) {
+                continue;
+            }
+            if (!empty($item)) {
+                $columns[$k] = true;
+            }
+        }
+    }
+    $result = [];
+    foreach ($data as $row) {
+        $newrow = [];
+        foreach ($row as $k => $item) {
+            if (empty($columns[$k])) {
+                continue;
+            }
+            $newrow[] = $item;
+            if (!empty($item)) {
+                $columns[$k] = true;
+            }
+        }
+        $result[] = $newrow;
+    }
+    return $result;
+}
+
+//определяет является ли строка Категориями
+function isCategoryRow($row)
+{
+    $result = true;
+    if ($row[0] !== $row[1]) {
+        return false;
+    }
+    foreach ($row as $k => $item) {
+        if ($k[0] > 0) {
+            if (!empty($item)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+//удаляет строку категорий (для отсутствия дублей эт.строки)
+function dellCategoryRow($data)
+{
+    $new = [];
+    foreach ($data as $row) {
+        if (isCategoryRow($row)) {
+            continue;
+        }
+        $new[] = $row;
+    }
+    $result = $new;
+    $result[0][0] = 'Category';
+    return $result;
+}
+
+function trimall($string)
+{
+    return preg_replace("/(^\s*)|(\s*$)/", "",
+        preg_replace("/\s+/", " ", trim($string)));
+}
+
+//заменяет названия колонок на названия из списка Алиасов
+function setAlias($inputArray, $alias)
+{
+    foreach ($inputArray as $row) {
+        if ($row[0] == 'Category') {
+            $tmpArray = [];
+            foreach ($row as $cell) {
+                $cell = preg_replace('/\t\n\r/', '', $cell);
+                $cell = trimall($cell);
+                if (isset($alias[$cell]) || array_key_exists($cell, $inputArray)) {
+                    $cell = $alias[$cell];
+                }
+                $tmpArray[] = $cell;
+            }
+        }
+    }
+    $inputArray[0] = $tmpArray;
+    return $inputArray;
+}
+
+//устанавливает имена колонок в ключи
+function setCollumnAsKey($inputArray)
+{
+    $tmpArray = [];
+    $tmpArray2 = [];
+    foreach ($inputArray as $row) {
+        //определяем строку заголовков
+        if (array_search('ProductAliasValue', $row) == true) {
+            $collumnArray = array_values($row); //массив имен колонок
+            if (!empty($collumnArray)) {
+                $tmp = $collumnArray;
+            }
+        }
+        //добавляем имена колонок в ключи
+        if (!empty($tmp) && !empty($row)) {
+            $tmpArray2 = array_combine($tmp, $row);
+        }
+        //удаляем неиспользуемые колонки
+        unset($tmpArray2['ImageAliasValue']);
+        unset($tmpArray2['PackageAliasValue']);
+        //добавляем CODE   в качестве ключа строки
+        $tmpArray[trimall($tmpArray2['CodeAliasValue'])] = $tmpArray2;
+    }
+    $inputArray = $tmpArray;
+    return $inputArray;
+}
+
+
+?>
+
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-    <title>Document</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
 
-
-    <!-- Bootstrap -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/css/bootstrap.min.css"
-          integrity="sha384-GJzZqFGwb1QTTN6wy59ffF1BuGJpLSa9DkKMp0DgiMDm4iYMj70gZWKYbI706tWS" crossorigin="anonymous">
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.2.1/js/bootstrap.min.js"
-            integrity="sha384-B0UglyR+jN6CkvvICOB2joaf5I4l3gm9GU6Hc1og6Ls7i6U/mkkaduKaBhlAXv9k"
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+            integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
             crossorigin="anonymous"></script>
+    <title></title>
+
 </head>
 <body>
-<form method='post' enctype="multipart/form-data" action="loadExcel.php">
+<form method='post' enctype="multipart/form-data" action="">
     <div class="form-group">
 
         <label for="FormControlFile">Импорт Прайса</label>
         <br>
-        <label for="usdRate">Курс пересчета USD</label>
-        <input type="number" name="usdRate" min="1" max="5" value="2.08" step="0.01" required>
-        <br>
-        <label for="manufacturer">Введите производителя</label>
-        <input type="text" size="50" name="manufacturer"  placeholder=" Если пустой - =NO NAME">
-        <br>
-        <br>
-	    <input required name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
-        <br>
-        <button type="submit" class="btn btn-primary pull-right"> Загрузить</button>
-        <button type="reset" class="btn btn-danger">Отмена</button>
+        <?php if (empty($_FILES)){?>
+            <label for="usdRate">Курс пересчета USD</label>
+            <input type="number" name="usdRate" min="1" max="5" value="2.08" step="0.01" required>
+            <br>
+            <label for="manufacturer">Введите производителя</label>
+            <input type="text" size="50" name="manufacturer"  placeholder=" Если пустой - =NO NAME">
+            <br>
+            <input required name="uploadfile" type=file class="form-control-file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,.csv">
+            <br>
+            <button type="submit" class="btn btn-primary pull-right"> Загрузить</button>
+            <button type="reset" class="btn btn-danger">Отмена</button>
+        <?}else {?>
+            <br>
+            <p>Курс пересчета: <?php echo (double)$_POST['usdRate'] ?></p>
+            <p>Производитель: <?php echo $_POST['manufacturer']; if (empty($_POST['manufacturer'])) echo 'NO-NAME'?></p>
+            <a href="/">Выбрать другой файл</a>
+        <?}?>
     </div>
 </form>
 
 <form method='post' enctype="multipart/form-data" action="processMSklad.php">
     <div class="form-group">
-        <br>
         <button type="submit" class="btn btn-primary pull-right"> Загрузить все товары из М.Склад в Базу</button>
     </div>
 </form>
 
+<?php if (!empty($_FILES)) {?>
 <hr>
-<div class="container"><h1>Сводные таблицы</h1>
+<div class="container"><h1>Сводные таблицы из Excel файла <?php echo $_FILES['uploadfile']["name"]?></h1>
     <span>
     <a href="/">Выбрать другой файл</a>
 
@@ -65,7 +437,7 @@
                aria-selected="true">Из Excel</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" id="profile-tab" data-toggle="tab" href="#profile" role="tab"
+            <a class="nav-link" id="database-tab" data-toggle="tab" href="#database" role="tab"
                aria-controls="profile"
                aria-selected="false">Из Базы Данных</a>
         </li>
@@ -83,7 +455,7 @@
 
     <div class="tab-content" id="myTabContent">
         <div class="tab-pane fade show active" id="home" role="tabpanel" aria-labelledby="home-tab">
-            <h2>Таблица данных из Excel файла <?php echo $inputFileName; ?></h2>
+            <h2>Таблица данных из Excel файла <?php echo $_FILES['uploadfile']["name"]?></h2>
             <?php
             $table = getExcelData($_FILES['uploadfile']["tmp_name"]);
             $result = [];
@@ -100,7 +472,7 @@
             ?>
         </div>
 
-        <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+        <div class="tab-pane fade" id="database" role="tabpanel" aria-labelledby="database-tab">
             <h2>Содержимое Базы Данных</h2>
             <?php printArrayAsTable($dbArray); ?>
         </div>
@@ -108,8 +480,7 @@
         <div class="tab-pane fade" id="productNew" role="tabpanel" aria-labelledby="productNew-tab">
             <h2>Товары, которых нет в Базе Данных</h2>
             <?php
-            $table = printTableDifference($diffBarcodes, $excelArray);
-            serialize($table);
+            $table = printTableDifference($diffBarcodes, $dataExcel);
 
             $arr = [];
             foreach ($table as $row) {
@@ -119,7 +490,7 @@
                 }
             }
             ?>
-            <input type='hidden' name='tableDifferences' value='<?php serialize($table); ?>' />
+            <input type='hidden' name='tableDifferences' value='<?php /*serialize($table);*/ ?>' />
 
             <table cellpadding="5" cellspacing="0" border="1">
 
@@ -165,7 +536,6 @@
         <div class="tab-pane fade" id="diffrentPrice" role="tabpanel" aria-labelledby="diffrentPrice">
             <h2>Товары, цена которых поменялась. /Курс пересчета: <?php echo (double)$_POST['usdRate'] ?>/</h2>
             <?php
-            //pr($productDifference);
             if (!empty($productDifference)){
                 printArrayAsTable($productDifference);
             }else{
@@ -176,6 +546,7 @@
     </div>
 </div>
 <hr>
+    <?}?>
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
@@ -186,6 +557,7 @@
         crossorigin="anonymous"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+
 
 
 </body>
