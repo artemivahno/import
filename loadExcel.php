@@ -11,7 +11,7 @@ $inputTmpFileName = $_FILES['uploadfile']["tmp_name"]; //получаем ссы
 $inputFileName = $_FILES['uploadfile']["name"];
 
 $dataExcel = getExcelData($inputTmpFileName);//помещаем данные в Excel файл
-$dbArray = callDataDB();//получаем данные из Базы Данных
+$dbArray = callDBName();//получаем данные из Базы Данных
 $dbPrice = dbQueryArray(callDBPrice());
 
 //запускаем сравнение базы и Excel
@@ -566,7 +566,7 @@ function setCollumnAsKey($inputArray)
         <div class="tab-pane fade" id="diffrentPrice" role="tabpanel" aria-labelledby="diffrentPrice">
             <h2>Товары, цена которых поменялась. /Курс пересчета: <?php echo (double)$_POST['usdRate'] ?>/</h2>
             <?php
-            //pr($productDifference);
+            //pr($priceDifference);
             if (!empty($productDifference)){
                 printArrayAsTable($productDifference);
             }else{

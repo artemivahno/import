@@ -11,7 +11,6 @@ $volume = isset($_REQUEST['key5']) ? $_REQUEST['key5'] :"";// объем
 $buyPrice = isset($_REQUEST['key6']) ? $_REQUEST['key6'] :"";
 
 $manufacturer =  $_POST['manufacturer'];
-
 $volume = array_product(explode("*", $volume));//габариты перемножаем с разделением по * получаем объем
 
 addProductMS($keyName,$keyCode,$keyDescr,$weight,$volume,$buyPrice);
