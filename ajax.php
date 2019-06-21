@@ -12,38 +12,47 @@ function addProduct() {
 
 function updateProduct() {
     $parameter = !empty($_REQUEST['parameter']) ? $_REQUEST['parameter'] : '';
-
+    //echo $parameter;
     switch($parameter) {
-        case 'description':     updateProductDescription();     break;
-        case 'weight':          updateProductWeight();          break;
-        case 'volume':          updateProductVolume();          break;
-        case 'incomprice':      updateProductIncomingPrice();   break;
-        case 'saleprice':       updateProductSalePrice();       break;
-        case 'quantitypb':      updateProductQuantityPBox();    break;
-        case 'box':             updateProductBox();             break;
-        case 'volumebox':       updateProductVolumeBox();       break;
+        case 'ProductAliasValue':           updateProductName();            break;
+        case 'DescriptionAliasValue':       updateProductDescription();     break;
+        case 'weight':                      updateProductWeight();          break;
+        case 'volume':                      updateProductVolume();          break;
+        case 'PriceUSDAlias':               updateProductIncomingPrice();   break;
+        case 'MSRP_USD_Alias':              updateProductSalePrice();       break;
+        case 'quantitypb':                  updateProductQuantityPBox();    break;
+        case 'box':                         updateProductBox();             break;
+        case 'volumebox':                   updateProductVolumeBox();       break;
     }
 }
 
+function updateProductName() {
+    $uuid       = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']      : '';
+    $name       = !empty($_REQUEST['value'])       ? $_REQUEST['value']     : '';
+    echo $uuid, $name;
+}
 function updateProductDescription() {
-    $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']         : '';
-    $description = !empty($_REQUEST['description']) ? $_REQUEST['description']  : '';
+    $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']     : '';
+    $description = !empty($_REQUEST['value'])       ? $_REQUEST['value']    : '';
+    echo $description;
 }
 function updateProductWeight() {
     $uuid       = !empty($_REQUEST['uuid'])         ? $_REQUEST['uuid']         : '';
-    $weight     = !empty($_REQUEST['weight'])       ? $_REQUEST['weight']       : '';
+    $weight     = !empty($_REQUEST['value'])        ? $_REQUEST['value']        : '';
 }
 function updateProductVolume() {
     $uuid       = !empty($_REQUEST['uuid'])         ? $_REQUEST['uuid']         : '';
-    $volume     = !empty($_REQUEST['volume'])       ? $_REQUEST['volume']       : '';
+    $volume     = !empty($_REQUEST['value'])        ? $_REQUEST['value']        : '';
 }
 function updateProductIncomingPrice() {
     $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']         : '';
-    $incomprice  = !empty($_REQUEST['incomprice'])  ? $_REQUEST['incomprice']   : '';
+    $incomprice  = !empty($_REQUEST['value'])       ? $_REQUEST['value']        : '';
+    echo "$incomprice";
 }
 function updateProductSalePrice() {
     $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']         : '';
-    $saleprice   = !empty($_REQUEST['saleprice'])   ? $_REQUEST['saleprice']    : '';
+    $saleprice   = !empty($_REQUEST['value'])       ? $_REQUEST['value']        : '';
+    echo "$saleprice";
 }
 function updateProductQuantityPBox() {
     $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']         : '';

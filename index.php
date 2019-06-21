@@ -16,9 +16,10 @@ if (!empty($_FILES['uploadfile']["tmp_name"])){
     //запускаем сравнение базы и Excel
     $diffBarcodes = compareExistance($dbName, $dataExcel);
     $sameProducts = compareSame($dbName, $dataExcel);
-    $priceDifference = printDiffPrice($sameProducts,$dataExcel,$dbPrice);
-
-    $nameDifferecne = compareSameProducts($sameProducts,$dataExcel,$dbName,getAliases());
+    if (!empty($sameProducts)){
+        $priceDifference = printDiffPrice($sameProducts,$dataExcel,$dbPrice);
+        $nameDifferecne = compareSameProducts($sameProducts,$dataExcel,$dbName,getAliases());
+    }
 
 }
 //-- КОНЕЦ ПРОЦЕССА ОБРАБОТКИ-----------------------------------
@@ -82,41 +83,58 @@ function getAliases (){
         "DESCRIPTION" => "DescriptionAliasValue",
         "description" => "DescriptionAliasValue",
 
-        "Price (USD)" => "Price(USD)Alias",
-        "Wholesale Price(USD)" => "Price(USD)Alias",
+        "Price (USD)" => "PriceUSDAlias",
+        "Wholesale Price(USD)" => "PriceUSDAlias",
         "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
         "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
         "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
 
-        "MSRP (USD)" => "MSRP (USD)Alias",
+        "MSRP (USD)" => "MSRP_USD_Alias",
 
-        "Product Weight (g)" => "Product Weight (g)Alias",
-        "Package G.W.(g)" => "Product Weight (g)Alias",
+        "Product Weight (g)" => "Product Weight_g_Alias",
+        "Package G.W.(g)" => "Product Weight_g_Alias",
 
-        "Carton Weight (kg)" => "Carton Weight (kg)Alias",
-        "Carton G.W.(kg)" => "Carton Weight (kg)Alias",
+        "Carton Weight (kg)" => "Carton Weight_kg_Alias",
+        "Carton G.W.(kg)" => "Carton Weight_kg_Alias",
 
-        "Color box Size (cm)" => "Color box Size (cm)Alias",
-        "Color box size (cm)" => "Color box Size (cm)Alias",
+        "Color box Size (cm)" => "Color box Size_cm_Alias",
+        "Color box size (cm)" => "Color box Size_cm_Alias",
 
-        "Inner carton packing Qty(PCS)" => "Inner carton packing Qty(PCS)Alias",
-        "Inner carton packing Qty(pcs)" => "Inner carton packing Qty(PCS)Alias",
+        "Inner carton packing Qty(PCS)" => "Inner carton packing Qty_pcs_Alias",
+        "Inner carton packing Qty(pcs)" => "Inner carton packing Qty_pcs_Alias",
 
         "Small box Size(cm)" => "Small box Size(cm)Alias",
 
-        "Carton packing Qty(PCS)" => "Carton packing Qty(PCS)Alias",
-        "Carton packing Qty(pcs)" => "Carton packing Qty(PCS)Alias",
+        "Carton packing Qty(PCS)" => "Carton packing Qty_pcs_Alias",
+        "Carton packing Qty(pcs)" => "Carton packing Qty_pcs_Alias",
 
-        "Carton Size(cm)" => "Carton Size(cm)Alias",
+        "Carton Size(cm)" => "Carton Size_cm_Alias",
     );
     return $alias;
 }
 
 function callDBName(){
-    $query =    "SELECT `barcodes` as 'CodeAliasValue',
-                        `name` as 'ProductAliasValue', 
-                        `description` as 'DescriptionAliasValue' 
-                FROM ms_products";
+    $query =    "    SELECT
+                     products.`barcodes`        AS 'CodeAliasValue',
+                     products.`name`            AS 'ProductAliasValue',
+                     products.`description`     AS 'DescriptionAliasValue',
+                     prices1.`value`            AS 'PriceUSDAlias',
+                     prices2.`value`            AS 'MSRP_USD_Alias',
+                     products.`uuid` 
+                     FROM ms_products AS products
+                     LEFT JOIN ms_product_prices AS prices1 ON products.uuid = prices1.productUuid AND prices1.type = 'Оптовая цена'
+                     LEFT JOIN ms_product_prices AS prices2 ON products.uuid = prices2.productUuid AND prices2.type = 'Цена EXW China'              
+    ";
+    /*$query =    "SELECT `barcodes` as 'CodeAliasValue',
+                        `name` as 'ProductAliasValue',
+                        `description` as 'DescriptionAliasValue',
+                        `value` as 'PriceUSDAlias',
+
+                        `uuid`
+                FROM ms_products
+                LEFT JOIN ms_product_prices ON ms_products.uuid = ms_product_prices.productUuid
+                WHERE ms_product_prices.type='Оптовая цена'
+    ";*/
     //$query = "SELECT * FROM ms_products";
     $dbArray = dbQueryArray($query);
     return $dbArray;
@@ -164,7 +182,9 @@ function printTableDifference($diffBarcodes, $dataExcel)
     return $result;
 }
 
+//Сравнивает совпадения excel и БД (поля для сравнения зависят от SQL запроса)
 function compareSameProducts ($sameProducts, $dataExcel, $dbName){
+    $usd = $_POST['usdRate'];
     $result = [];
     $tmpDBProducts = [];
 
@@ -192,33 +212,38 @@ function compareSameProducts ($sameProducts, $dataExcel, $dbName){
     foreach ($tmpDBProducts as $row){
         $arrKeys = array_keys($row);
     }
-
     //Создаем массив с ключами из Базы данных
     foreach ($arrKeys as $key){
         //пропускаем строку с CodeAliasValue
         if ($key == 'CodeAliasValue'){
             continue;
         }
+
         //$result[$key] = [];
         //бежим по массиву из Excel
         foreach ($tmpArrExcel as $data){
-            //pr($data);
             foreach ($data as $elementExcel){
                 $code = trim($elementExcel['CodeAliasValue']);// код текущей строки Excel
                 $dataDB = $tmpDBProducts[$code];//элемент из БД по этому коду
+                //убираем знак $ и оставляем только цифры в PriceUSDAlias MSRP_USD_Alias
+                $elementExcel['PriceUSDAlias'] = round((preg_replace("/[^,.0-9]/", '',
+                        $elementExcel['PriceUSDAlias'])) *$usd,2);
+                $elementExcel['MSRP_USD_Alias'] = round((preg_replace("/[^,.0-9]/", '',
+                        $elementExcel['MSRP_USD_Alias'])) *$usd,2);
 
                 //если не идентичны с БД, создаем результирующую строку
                 if ($elementExcel[$key] != $dataDB[$key]){
                     $result[$key][$code] = [
-                            trimall($elementExcel['ProductAliasValue']),
-                            trimall($elementExcel[$key]),
-                            trimall($tmpDBProducts[$code][$key])
+                        'Code'      =>      trimall($elementExcel['CodeAliasValue']),
+                        'Product'   =>      trimall($elementExcel['ProductAliasValue']),
+                        'From Excel'=>      trimall($elementExcel[$key]),
+                        'From DB'   =>      trimall($tmpDBProducts[$code][$key]),
+                        'uuid'      =>      trimall($tmpDBProducts[$code]['uuid']),
                                             ];
                 }
             }
         }
     }
-    pr($result);
     return $result;
 }
 
@@ -237,12 +262,12 @@ function printDiffPrice($sameProducts,$dataExcel,$dbPrice){
         $tmpArr[] = (array_intersect_key($row, array_flip($sameProducts)));
     }
 
-    //очищаем все лишнее в строке Price(USD)Alias и вставляем в массив цену из базы данных
+    //очищаем все лишнее в строке PriceUSDAlias и вставляем в массив цену из базы данных
     foreach ($tmpArr as $row){
         foreach ($row as $value){
             $value['CodeAliasValue'] = trim($value['CodeAliasValue']);
-            //убираем знак $ и оставляем только цифры в Price(USD)Alias
-            $value['Price(USD)Alias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
+            //убираем знак $ и оставляем только цифры в PriceUSDAlias
+            $value['PriceUSDAlias'] = preg_replace("/[^,.0-9]/", '', $value['PriceUSDAlias']);
             //если товар с таким кодом есть в базе данных вывести цену
             if ($dbArray[$value['CodeAliasValue']]){
                 array_unshift($value, $value['PriceDataBase'] =
@@ -425,6 +450,7 @@ function setCollumnAsKey($inputArray)
         //удаляем неиспользуемые колонки
         unset($tmpArray2['ImageAliasValue']);
         unset($tmpArray2['PackageAliasValue']);
+
         //добавляем CODE   в качестве ключа строки
         $tmpArray[trimall($tmpArray2['CodeAliasValue'])] = $tmpArray2;
     }
@@ -523,6 +549,21 @@ function setCollumnAsKey($inputArray)
                aria-controls="diffrentPrice"
                aria-selected="false">Поменялась цена товара</a>
         </li>
+        <?php if (!empty($nameDifferecne)){?>
+            <?php foreach ($nameDifferecne as $key=>$tabs){
+                if ($key == 'uuid'){
+                    continue;
+                }
+                ?>
+                <li class="nav-item">
+                    <a class="nav-link" id="<?php echo $key ?>-dynamic" data-toggle="tab" href="#<?php echo $key ?>" role="tab"
+                       aria-controls="<?php echo $key ?>"
+                       aria-selected="false">Поменялось: <?php echo $key ?></a>
+                </li>
+
+            <?php } ?>
+        <?php } ?>
+
     </ul>
 
     <div class="tab-content" id="myTabContent">
@@ -603,15 +644,13 @@ function setCollumnAsKey($inputArray)
             <h2>Товары, цена которых поменялась. /Курс пересчета: <?php echo (double)$_POST['usdRate'] ?>/</h2>
             <?php
             if (!empty($priceDifference)){
-                pr($priceDifference);
-
-                $arr = [];
-                foreach ($priceDifference as $row) {
-                    foreach ($row as $v) {
-                        $displayArr[] = $v;
-                        $arr = $displayArr;
-                    }
+            $arr = [];
+            foreach ($priceDifference as $row) {
+                foreach ($row as $v) {
+                    $displayArr[] = $v;
+                    $arr = $displayArr;
                 }
+            }
 
             ?>
 
@@ -637,26 +676,72 @@ function setCollumnAsKey($inputArray)
                 <td></td>
                 <td><?php echo implode('</td><td>', $row); ?></td>
                 </thead>
-               <!-- --><?/* else: */?>
-                    <tr>
-                        <td>
-                            <button class="ajax" data-action="addproduct"
-                                    data-name="<?php echo $row['ProductAliasValue'].' '.$row['ColorAliasValue'] ?>"
-                            >Добавить</button>
-                        </td>
-                        <td><?php echo implode('</td><td>', $row); ?></td>
-                    </tr>
+                <!-- --><?/* else: */?>
+                <tr>
+                    <td>
+                        <button class="ajax" data-action="addproduct"
+                                data-name="<?php echo $row['ProductAliasValue'].' '.$row['ColorAliasValue'] ?>"
+                        >Добавить</button>
+                    </td>
+                    <td><?php echo implode('</td><td>', $row); ?></td>
+                </tr>
                 <?/* endif; */?>
                 <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
+
+
+<!--Динамические вкладки-->
+        <?php foreach ($nameDifferecne as $key=>$tabs){
+            if ($key == 'uuid'){
+                continue;
+            }
+            ?>
+
+            <div class="tab-pane fade" id="<?php echo $key ?>" role="tabpanel" aria-labelledby="<?php echo $key ?>">
+                <h2>Не совпадает с базой: <?php echo $key ?></h2>
+                <?php /*pr($tabs);*/ ?>
+                <table cellpadding="5" cellspacing="0" border="1">
+
+                    <thead>
+                    <tr>
+                        <th>
+                            <button class="all">Изменить все</button>
+                        </th>
+                        <th><?php echo implode('</th><th>', array_keys(current($tabs))); ?></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($tabs as $row):
+                    array_map('htmlentities', $row);
+                    /*pr($row);*/
+
+                    ?>
+                        <tr>
+                            <td>
+                                <button class="ajax"
+                                        data-action="updateproduct"
+                                        data-parameter="<? echo $key; ?>"
+                                        data-uuid="<? echo $row['uuid'] ?>"
+                                        data-value="<? echo $row['From Excel'] ?>"
+                                >
+                                    Обновить
+                                </button>
+                            </td>
+                            <td><?php echo implode('</td><td>', $row); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php } ?>
     </div>
-</div>
-<hr>
-    <? }else{
+                <hr>
+            <? }else{
                 echo "Нет товаров в которых поменялась цена";
             }?>
+
     <?}?>
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 
@@ -676,15 +761,8 @@ function setCollumnAsKey($inputArray)
             var name        = $(this).data('name');
             var uuid        = $(this).data('uuid');
             var parameter   = $(this).data('parameter');
-            var description = $(this).data('description');
-            var weight      = $(this).data('weight');
-            var volume      = $(this).data('volume');
-            var incomprice  = $(this).data('incomprice');
-            var saleprice   = $(this).data('saleprice');
-            var quantitypb  = $(this).data('quantitypb');
-            var box         = $(this).data('box');
-            var volumebox   = $(this).data('volumebox');
-                alert(name);
+            var value       = $(this).data('value');
+                alert(value);
             $.ajax({
                 url: "ajax.php",
                 type: "POST",
@@ -693,19 +771,12 @@ function setCollumnAsKey($inputArray)
                     name:           name,
                     uuid:           uuid,
                     parameter:      parameter,
-                    description:    description,
-                    weight:         weight,
-                    volume:         volume,
-                    incomprice:     incomprice,
-                    saleprice:      saleprice,
-                    quantitypb:     quantitypb,
-                    box:            box,
-                    volumebox:      volumebox,
+                    value:          value,
                 },
                 success: function (result) {
                     // json decode
                     // alert(result.text);
-                    // Прятать кнопку
+                    // + Прятать кнопку +
                     // Показывать текст из ajax.php
                 }
 
@@ -733,4 +804,4 @@ function setCollumnAsKey($inputArray)
 </body>
 </html>
 
-<?php
+

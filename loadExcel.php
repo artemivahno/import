@@ -75,8 +75,8 @@ function getAliases (){
         "Description" => "DescriptionAliasValue",
         "DESCRIPTION" => "DescriptionAliasValue",
 
-        "Price (USD)" => "Price(USD)Alias",
-        "Wholesale Price(USD)" => "Price(USD)Alias",
+        "Price (USD)" => "PriceUSDAlias",
+        "Wholesale Price(USD)" => "PriceUSDAlias",
         "21-100pcs Price USD 10% discount" => "21-100pcs Price USD 10% discount Alias",
         "101-200pcs Price USD 15% discount" => "101-200pcs Price USD 15% discount Alias",
         "Over 200pcs Price USD 20% discount" => "Over 200pcs Price USD 20% discount Alias",
@@ -174,7 +174,7 @@ function printDiffPrice($diffPrice,$excelArray,$dbPrice){
         foreach ($row as $value){
             $value['CodeAliasValue'] = trim($value['CodeAliasValue']);
             //убираем знак $ и оставляем только цифры в Price(USD)Alias
-            $value['Price(USD)Alias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
+            $value['PriceUSDAlias'] = preg_replace("/[^,.0-9]/", '', $value['Price(USD)Alias']);
             //если товар с таким кодом есть в базе данных вставить цену
             if ($dbArray[$value['CodeAliasValue']]){
                 array_unshift($value, /*$value['PriceDataBase'] =*/
@@ -551,7 +551,7 @@ function setCollumnAsKey($inputArray)
                                     data-key3="<?php echo $row['DescriptionAliasValue'] ?>"
                                     data-key4="<?php echo $row['Product Weight (g)Alias'] ?>"
                                     data-key5="<?php echo $row['Color box Size (cm)Alias'] ?>"
-                                    data-key6="<?php echo $row['Price(USD)Alias'] ?>"
+                                    data-key6="<?php echo $row['PriceUSDAlias'] ?>"
                             >Добавить в Мой Склад
                             </button>
                         </td>
