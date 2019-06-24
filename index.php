@@ -544,11 +544,11 @@ function setCollumnAsKey($inputArray)
                aria-controls="productNew"
                aria-selected="false">Новые товары</a>
         </li>
-        <li class="nav-item">
+        <!--<li class="nav-item">
             <a class="nav-link" id="productNew-tab" data-toggle="tab" href="#diffrentPrice" role="tab"
                aria-controls="diffrentPrice"
                aria-selected="false">Поменялась цена товара</a>
-        </li>
+        </li>-->
         <?php if (!empty($nameDifferecne)){?>
             <?php foreach ($nameDifferecne as $key=>$tabs){
                 if ($key == 'uuid'){
@@ -628,8 +628,16 @@ function setCollumnAsKey($inputArray)
                 <? else: ?>
                     <tr>
                         <td>
-                            <button class="ajax" data-action="addproduct"
-                                    data-name="<?php echo $row['ProductAliasValue'].' '.$row['ColorAliasValue'] ?>"
+                            <button class               = "ajax" data-action="addproduct"
+                                    data-name           = "<?php echo $row['ProductAliasValue'].' '.$row['ColorAliasValue'] ?>"
+                                    data-barcodes       = "<?php echo $row['CodeAliasValue']?>"
+                                    data-description    = "<?php echo $row['DescriptionAliasValue']?>"
+                                    data-weight         = "<?php echo $row['Product Weight_g_Alias']?>"
+                                    data-volume         = "<?php echo $row['Color box Size_cm_Alias']?>"
+                                    data-buyprice       = "<?php echo $row['PriceUSDAlias']?>"
+
+                                    data-packingqty     = "<?php echo $row['Carton packing Qty_pcs_Alias']?>"
+                                    data-innerqty       = "<?php echo $row['Inner carton packing Qty_pcs_Alias']?>"
                             >Добавить</button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
@@ -642,53 +650,7 @@ function setCollumnAsKey($inputArray)
 
         <div class="tab-pane fade" id="diffrentPrice" role="tabpanel" aria-labelledby="diffrentPrice">
             <h2>Товары, цена которых поменялась. /Курс пересчета: <?php echo (double)$_POST['usdRate'] ?>/</h2>
-            <?php
-            if (!empty($priceDifference)){
-            $arr = [];
-            foreach ($priceDifference as $row) {
-                foreach ($row as $v) {
-                    $displayArr[] = $v;
-                    $arr = $displayArr;
-                }
-            }
 
-            ?>
-
-            <!--<input type='hidden' name='tableDifferences' value='<?php /*serialize($priceDifference); */?>' />-->
-            <table cellpadding="5" cellspacing="0" border="1">
-
-                <thead>
-                <tr>
-                    <th>
-                        <button class="all">Добавить все</button>
-                    </th>
-                    <th><?php echo implode('</th><th>', array_keys(current($arr))); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($arr as $row):
-                //pr($row);
-                /*array_map('htmlentities', $row);*/
-                ?>
-                <?php /*if ($row['CategoryAliasValue'] == "CategoryAliasValue"): //если заголовок
-                continue; */?>
-                <thead>
-                <td></td>
-                <td><?php echo implode('</td><td>', $row); ?></td>
-                </thead>
-                <!-- --><?/* else: */?>
-                <tr>
-                    <td>
-                        <button class="ajax" data-action="addproduct"
-                                data-name="<?php echo $row['ProductAliasValue'].' '.$row['ColorAliasValue'] ?>"
-                        >Добавить</button>
-                    </td>
-                    <td><?php echo implode('</td><td>', $row); ?></td>
-                </tr>
-                <?/* endif; */?>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
         </div>
 
 
@@ -742,7 +704,6 @@ function setCollumnAsKey($inputArray)
                 echo "Нет товаров в которых поменялась цена";
             }?>
 
-    <?}?>
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
@@ -762,7 +723,15 @@ function setCollumnAsKey($inputArray)
             var uuid        = $(this).data('uuid');
             var parameter   = $(this).data('parameter');
             var value       = $(this).data('value');
-                alert(value);
+            var barcodes    = $(this).data('barcodes');
+            var description = $(this).data('description');
+            var buyPrice    = $(this).data('buyprice');
+            var weight      = $(this).data('weight');
+            var volume      = $(this).data('volume');
+
+            var packingQty  = $(this).data('packingqty');
+            var innerQty    = $(this).data('innerqty');
+                alert(innerQty);
             $.ajax({
                 url: "ajax.php",
                 type: "POST",
@@ -772,6 +741,14 @@ function setCollumnAsKey($inputArray)
                     uuid:           uuid,
                     parameter:      parameter,
                     value:          value,
+                    barcodes:       barcodes,
+
+                    description:    description,
+                    weight:         weight,
+                    volume:         volume,
+                    buyPrice:       buyPrice,
+                    packingQty:     packingQty,
+                    innerQty:       innerQty,
                 },
                 success: function (result) {
                     // json decode
