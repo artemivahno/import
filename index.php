@@ -544,11 +544,6 @@ function setCollumnAsKey($inputArray)
                aria-controls="productNew"
                aria-selected="false">Новые товары</a>
         </li>
-        <!--<li class="nav-item">
-            <a class="nav-link" id="productNew-tab" data-toggle="tab" href="#diffrentPrice" role="tab"
-               aria-controls="diffrentPrice"
-               aria-selected="false">Поменялась цена товара</a>
-        </li>-->
         <?php if (!empty($nameDifferecne)){?>
             <?php foreach ($nameDifferecne as $key=>$tabs){
                 if ($key == 'uuid'){
@@ -635,9 +630,11 @@ function setCollumnAsKey($inputArray)
                                     data-weight         = "<?php echo $row['Product Weight_g_Alias']?>"
                                     data-volume         = "<?php echo $row['Color box Size_cm_Alias']?>"
                                     data-buyprice       = "<?php echo $row['PriceUSDAlias']?>"
-
+                                    data-msrpprice      = "<?php echo $row['MSRP_USD_Alias']?>"
+                                    data-usd            = "<?php echo $_POST['usdRate']?>"
                                     data-packingqty     = "<?php echo $row['Carton packing Qty_pcs_Alias']?>"
                                     data-innerqty       = "<?php echo $row['Inner carton packing Qty_pcs_Alias']?>"
+                                    data-manufacturer   = "<?php echo $_POST['manufacturer']; if (empty($_POST['manufacturer'])) echo 'NO-NAME'?>"
                             >Добавить</button>
                         </td>
                         <td><?php echo implode('</td><td>', $row); ?></td>
@@ -726,12 +723,15 @@ function setCollumnAsKey($inputArray)
             var barcodes    = $(this).data('barcodes');
             var description = $(this).data('description');
             var buyPrice    = $(this).data('buyprice');
+            var msrpPrice   = $(this).data('msrpprice');
+            var usd         = $(this).data('usd');
             var weight      = $(this).data('weight');
             var volume      = $(this).data('volume');
+            var manufacturer= $(this).data('manufacturer');
 
             var packingQty  = $(this).data('packingqty');
             var innerQty    = $(this).data('innerqty');
-                alert(innerQty);
+                //alert(innerQty);
             $.ajax({
                 url: "ajax.php",
                 type: "POST",
@@ -747,10 +747,14 @@ function setCollumnAsKey($inputArray)
                     weight:         weight,
                     volume:         volume,
                     buyPrice:       buyPrice,
+                    msrpPrice:      msrpPrice,
+                    usd:            usd,
+
                     packingQty:     packingQty,
                     innerQty:       innerQty,
                 },
                 success: function (result) {
+                    alert(result);
                     // json decode
                     // alert(result.text);
                     // + Прятать кнопку +

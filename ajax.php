@@ -4,12 +4,14 @@ require_once 'config.php';
 require_once 'core.php';
 
 
-$action = !empty($_REQUEST['action']) ? $_REQUEST['action'] : '';
-$uuid       = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']      : '';
-$value       = !empty($_REQUEST['value'])       ? $_REQUEST['value']     : '';
+//$usd        = !empty($_REQUEST['usd'])          ? $_REQUEST['usd'] : '';
+$action     = !empty($_REQUEST['action'])       ? $_REQUEST['action'] : '';
+$uuid       = !empty($_REQUEST['uuid'])         ? $_REQUEST['uuid']      : '';
+$value      = !empty($_REQUEST['value'])        ? $_REQUEST['value']     : '';
 
 switch($action) {
-    case 'addproduct':    addProduct();    break;
+    case 'addproduct':    list($uuid, $error) = addProduct(); echo $uuid, $error;  break;
+
     case 'updateproduct': updateProduct($uuid, $value); break;
 }
 
@@ -20,14 +22,21 @@ function addProduct() {
     $weight =           !empty($_REQUEST['weight'])         ? $_REQUEST['weight'] : '';
     $volume =           !empty($_REQUEST['volume'])         ? $_REQUEST['volume'] : '';
 
-    $buyPrice =   '2222';        //!empty($_REQUEST['buyPrice'])         ? $_REQUEST['buyPrice'] : '';
-    //$packingQty =       !empty($_REQUEST['packingQty'])     ? $_REQUEST['packingQty'] : '';
-    $innerQty =       '1111';  //!empty($_REQUEST['innerQty'])       ? $_REQUEST['innerQty'] : '';
-    //pr($buyPrice);
+    $buyPrice =         !empty($_REQUEST['buyPrice'])       ? $_REQUEST['buyPrice'] : '';
+    $msrpPrice =        !empty($_REQUEST['msrpPrice'])      ? $_REQUEST['msrpPrice'] : '';
+    $usd =              !empty($_REQUEST['usd'])            ? $_REQUEST['usd'] : '';
+    $manufacturer =     !empty($_REQUEST['manufacturer'])   ? $_REQUEST['manufacturer'] : '';
 
+    //$packingQty =       !empty($_REQUEST['packingQty'])     ? $_REQUEST['packingQty'] : '';
+    $innerQty =         !empty($_REQUEST['innerQty'])&& is_numeric($_REQUEST['innerQty'])
+                                ? (float)$_REQUEST['innerQty'] : '';
+
+    $buyPrice = dellUSD($buyPrice,$usd);
+    $msrpPrice = dellUSD($msrpPrice,$usd);
+    pr($innerQty);
     $weight = prepareWeight($weight);
     $volume = prepareVolume($volume);
-
+//die('first');
 
     $formdata = [
         'name'              => $name,
@@ -59,21 +68,21 @@ function addProduct() {
                                 ],
 
         'packs'           =>    [
-                                'uom' =>[
-                                    'id'=> '0a5a5d44-9665-11e9-9ff4-34e80018812a',
-                                    'meta'=>    [
-                                        'href'          => 'https://online.moysklad.ru/api/remap/1.1/entity/country/fd44cd2e-b398-4222-9c43-f75688bdf327',
-                                        'metadataHref'	=> 'https://online.moysklad.ru/api/remap/1.1/entity/country/metadata',
-                                        'type'			=> 'country',
-                                        'mediaType'		=> 'application/json',
-                                        'uuidHref'		=> 'https://online.moysklad.ru/app/#country/edit?id=fd44cd2e-b398-4222-9c43-f75688bdf327'
-
-                                                ]
-                                        ],
-                                    'quantity' => $innerQty
+                                    [
+                                        'uom' =>[
+                                                'meta'=>    [
+                                                    'href'          => 'https://online.moysklad.ru/api/remap/1.1/entity/uom/e4db6a0a-9641-11e9-9ff4-31500012e807',
+                                                    'metadataHref'	=> 'https://online.moysklad.ru/api/remap/1.1/entity/uom/metadata',
+                                                    'type'          => 'uom',
+                                                    'mediaType'		=> 'application/json',
+                                                    ]
+                                                ],
+                                        'quantity' => $innerQty,
+                                    ],
                                 ],
 
-        /*'buyPrice'           =>    [
+
+        'buyPrice'           =>    [
                                 'value' => $buyPrice,
                                 'currency' =>[
                                     'meta'=>    [
@@ -82,13 +91,31 @@ function addProduct() {
                                         'type'			=> 'currency',
                                         'mediaType'		=> 'application/json',
                                         'uuidHref'		=> 'https://online.moysklad.ru/app/#currency/edit?id=f7b01c7f-86b9-11e9-9107-504800062334'
-
                                                 ]
                                         ],
-                                ],*/
-
+                                ],
+        'salePrices'           =>    [
+                                        [
+                                'value' => $msrpPrice,
+                                'currency' =>[
+                                    'meta'=>    [
+                                        'href'          => 'https://online.moysklad.ru/api/remap/1.1/entity/currency/f7b01c7f-86b9-11e9-9107-504800062334',
+                                        'metadataHref'	=> 'https://online.moysklad.ru/api/remap/1.1/entity/currency/metadata',
+                                        'type'			=> 'currency',
+                                        'mediaType'		=> 'application/json',
+                                        'uuidHref'		=> 'https://online.moysklad.ru/app/#currency/edit?id=f7b01c7f-86b9-11e9-9107-504800062334'
+                                                ]
+                                        ],
+                                'priceType' => 'Цена EXW China',
+                                        ],
+                                ],
     ];
-
+    //проверяем является ли количество числом больше 0 если нет, удаляем его из массива
+    if (!is_numeric($innerQty)&& !$innerQty>0){
+        unset($formdata['packs']);
+    }
+    //pr($innerQty);
+//die();
     $body = putJSONarray('product', $formdata, 'POST');
 
     $uuid	= !empty($body['id'])                   ? $body['id']                               : null;
@@ -98,16 +125,16 @@ function addProduct() {
 }
 
 /**
- * @param string $volume
- * @return float|int|string
+ * @param string $buyPrice
+ * @return string|string[]|null
  */
-//переводим объем в м3
-function prepareVolume(string $volume)
+function dellUSD($buyPrice, $usd)
 {
-    $volume = array_product(explode("*", $volume));//габариты перемножаем с разделением по * получаем объем
-    $volume = is_numeric($volume) ? $volume / 1000000 : 0;
-    return $volume;
+    $buyPrice = preg_replace("/[^,.0-9]/", '', $buyPrice);
+    $buyPrice = (float)$buyPrice*100;
+    return $buyPrice;
 }
+
 
 function updateProduct($uuid, $value) {
     $parameter = !empty($_REQUEST['parameter']) ? $_REQUEST['parameter'] : '';
@@ -116,9 +143,10 @@ function updateProduct($uuid, $value) {
         case 'DescriptionAliasValue':       updateProductSimple($uuid, 'description', $value);     break;
 
         case 'weight':                      updateProductWeight($uuid, $value);          break;
-        case 'volume':                      updateProductVolume($uuid, 'volume', $value);          break;
+        case 'volume':                      updateProductVolume($uuid, $value);          break;
 
-        case 'PriceUSDAlias':               updateProductIncomingPrice($uuid, 'weight', $value);   break;
+        case 'PriceUSDAlias':               updateProductIncomingPrice($uuid, $value);   break;
+
         case 'MSRP_USD_Alias':              updateProductSalePrice($uuid, 'weight', $value);       break;
         case 'quantitypb':                  updateProductQuantityPBox($uuid, 'weight', $value);    break;
         case 'box':                         updateProductBox($uuid, 'weight', $value);             break;
@@ -127,22 +155,20 @@ function updateProduct($uuid, $value) {
 }
 //Обновление полей без метаданных
 function updateProductSimple($uuid, $key, $value) {
-
     $formdata =[
         'id'       => $uuid,
         $key       => $value
     ];
-
     $body = putJSON($uuid,'product', $formdata);
 
     $uuid	= !empty($body['id'])                   ? $body['id']                               : null;
     $error	= !empty($body['errors'][0]['error'])   ? 'Мой Склад: '.$body['errors'][0]['error'] : '';
     pr($value ." / ". $uuid);
     return [$uuid, $error];
+}
 
-
-}function updateProductWeight($uuid, $value) {
-
+function updateProductWeight($uuid, $value) {
+    $value = prepareWeight($value);
     $formdata =[
         'id'       => $uuid,
         'weight'   => $value
@@ -155,24 +181,44 @@ function updateProductSimple($uuid, $key, $value) {
     pr($value ." / ". $uuid);
     return [$uuid, $error];
 }
+function updateProductVolume($uuid, $value) {
+    $value = prepareVolume($value);
+    $formdata =[
+        'id'       => $uuid,
+        'volume'   => $value
+    ];
 
+    $body = putJSON($uuid,'product', $formdata);
 
-
-function updateProductDescription() {
-    $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']     : '';
-    $description = !empty($_REQUEST['value'])       ? $_REQUEST['value']    : '';
-    echo $description;
+    $uuid	= !empty($body['id'])                   ? $body['id']                               : null;
+    $error	= !empty($body['errors'][0]['error'])   ? 'Мой Склад: '.$body['errors'][0]['error'] : '';
+    pr($value ." / ". $uuid);
+    return [$uuid, $error];
 }
 
-function updateProductVolume() {
-    $uuid       = !empty($_REQUEST['uuid'])         ? $_REQUEST['uuid']         : '';
-    $volume     = !empty($_REQUEST['value'])        ? $_REQUEST['value']        : '';
+function updateProductIncomingPrice($uuid, $value) {
+    $formdata =[
+        'id'        => $uuid,
+        'value'     => $value,
+        'currency'  =>[
+            'meta'  =>    [
+                'href'          => 'https://online.moysklad.ru/api/remap/1.1/entity/currency/f7b01c7f-86b9-11e9-9107-504800062334',
+                'metadataHref'	=> 'https://online.moysklad.ru/api/remap/1.1/entity/currency/metadata',
+                'type'			=> 'currency',
+                'mediaType'		=> 'application/json',
+                'uuidHref'		=> 'https://online.moysklad.ru/app/#currency/edit?id=f7b01c7f-86b9-11e9-9107-504800062334'
+            ]
+        ],
+    ];
+
+    $body = putJSON($uuid,'buyPrice', $formdata);
+
+    $uuid	= !empty($body['id'])                   ? $body['id']                               : null;
+    $error	= !empty($body['errors'][0]['error'])   ? 'Мой Склад: '.$body['errors'][0]['error'] : '';
+    pr($value ." / ". $uuid);
+    return [$uuid, $error];
 }
-function updateProductIncomingPrice() {
-    $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']         : '';
-    $incomprice  = !empty($_REQUEST['value'])       ? $_REQUEST['value']        : '';
-    echo "$incomprice";
-}
+
 function updateProductSalePrice() {
     $uuid        = !empty($_REQUEST['uuid'])        ? $_REQUEST['uuid']         : '';
     $saleprice   = !empty($_REQUEST['value'])       ? $_REQUEST['value']        : '';
@@ -196,6 +242,17 @@ function prepareWeight ($weight){
     return $weight;
 }
 
+/**
+ * @param string $volume
+ * @return float|int|string
+ */
+//переводим объем в м3
+function prepareVolume(string $volume)
+{
+    $volume = array_product(explode("*", $volume));//габариты перемножаем с разделением по * получаем объем
+    $volume = is_numeric($volume) ? $volume / 1000000 : 0;
+    return $volume;
+}
 
 function putJSONarray($type, $data, $method='PUT') {
     $poststring = json_encode($data);
@@ -228,6 +285,9 @@ function putJSONarray($type, $data, $method='PUT') {
         $body .= $str;
     }
     fclose($fp);
+    echo $body;
+
+    //die('asdfasdfa');
 
     $body = json_decode($body, true);
     return $body;
